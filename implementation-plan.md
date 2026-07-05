@@ -9,7 +9,7 @@
 
 ## Phase 2: Authentication
 
-- [ ] Create login page
+- [x] Create login page
 - [ ] Implement login API endpoint
 - [ ] Implement session-based authentication middleware
 - [ ] Implement logout API endpoint
