@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
+import { Field } from "@ark-ui/react/field";
 import { authClient } from "../lib/auth-client";
 
 const loginSchema = z.object({
@@ -54,50 +55,48 @@ export function LoginPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
-      <h1>Log in</h1>
-      {error && (
-        <p className="auth-error" role="alert">
-          {error}
-        </p>
-      )}
-      <label>
-        Email
-        <input
-          type="email"
-          {...emailField}
-          ref={(el) => {
-            emailFormRef(el);
-            emailRef.current = el;
-          }}
-          className={emailInvalid ? "field-invalid" : undefined}
-        />
-        {errors.email && (
-          <span className="login-error" role="alert">
-            {errors.email.message}
-          </span>
+    <div className="login-page">
+      <form onSubmit={handleSubmit(onSubmit)} className="login-form" noValidate>
+        <h1>Log in</h1>
+        {error && (
+          <p className="auth-error" role="alert">
+            {error}
+          </p>
         )}
-      </label>
-      <label>
-        Password
-        <input
-          type="password"
-          {...passwordField}
-          ref={(el) => {
-            passwordFormRef(el);
-            passwordRef.current = el;
-          }}
-          className={passwordInvalid ? "field-invalid" : undefined}
-        />
-        {errors.password && (
-          <span className="login-error" role="alert">
-            {errors.password.message}
-          </span>
-        )}
-      </label>
-      <button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Logging in..." : "Log in"}
-      </button>
-    </form>
+        <Field.Root className="login-field" invalid={emailInvalid}>
+          <Field.Label>Email</Field.Label>
+          <Field.Input
+            type="email"
+            {...emailField}
+            ref={(el) => {
+              emailFormRef(el);
+              emailRef.current = el;
+            }}
+            className={emailInvalid ? "field-invalid" : undefined}
+          />
+          {errors.email && (
+            <Field.ErrorText className="login-error">{errors.email.message}</Field.ErrorText>
+          )}
+        </Field.Root>
+        <Field.Root className="login-field" invalid={passwordInvalid}>
+          <Field.Label>Password</Field.Label>
+          <Field.Input
+            type="password"
+            {...passwordField}
+            ref={(el) => {
+              passwordFormRef(el);
+              passwordRef.current = el;
+            }}
+            className={passwordInvalid ? "field-invalid" : undefined}
+          />
+          {errors.password && (
+            <Field.ErrorText className="login-error">{errors.password.message}</Field.ErrorText>
+          )}
+        </Field.Root>
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Logging in..." : "Log in"}
+        </button>
+      </form>
+    </div>
   );
 }
