@@ -6,6 +6,13 @@
   "scripts": {
     "dev": "bun --filter '*' dev",
     "dev:server": "bun --filter server dev",
-    "dev:client": "bun --filter client dev"
+    "dev:client": "bun --filter client dev",
+    "test:e2e:setup": "cd server && bun run db:test:setup",
+    "test:e2e": "bun run test:e2e:setup && playwright test",
+    "test:e2e:ui": "bun run test:e2e:setup && playwright test --ui"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^24.13.2"
   }
 }

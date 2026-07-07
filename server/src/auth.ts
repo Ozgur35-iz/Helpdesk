@@ -12,7 +12,7 @@ export const auth = betterAuth({
     disableSignUp: true,
   },
   rateLimit: {
-    enabled: true,
+    enabled: process.env.NODE_ENV === "production",
     customRules: {
       "/sign-in/email": {
         window: 30,

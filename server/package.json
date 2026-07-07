@@ -9,8 +9,13 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:seed": "bun prisma/seed.ts"
+    "db:seed": "bun prisma/seed.ts",
+    "db:test:migrate": "bun --env-file=.env.test run db:migrate:deploy",
+    "db:test:seed": "bun --env-file=.env.test run db:seed",
+    "db:test:setup": "bun run db:test:migrate && bun run db:test:seed",
+    "test:server": "bun --env-file=.env.test src/index.ts"
   },
   "prisma": {
     "seed": "bun prisma/seed.ts"
