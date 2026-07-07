@@ -10,8 +10,27 @@
   font-weight: 600;
 }
 
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 main {
   padding: 1.5rem;
+}
+
+.users-table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 720px;
+}
+
+.users-table th,
+.users-table td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #ddd;
 }
 
 .login-page {

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { authClient } from "../lib/auth-client";
 
 export function Navbar() {
@@ -6,7 +7,10 @@ export function Navbar() {
   return (
     <nav className="navbar">
       <span className="navbar-user">{session?.user.name}</span>
-      <button onClick={() => authClient.signOut()}>Log out</button>
+      <div className="navbar-actions">
+        {session?.user.role === "admin" && <Link to="/users">Users</Link>}
+        <button onClick={() => authClient.signOut()}>Log out</button>
+      </div>
     </nav>
   );
 }

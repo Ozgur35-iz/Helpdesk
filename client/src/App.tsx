@@ -1,9 +1,10 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import "./App.css";
-import { GuestOnly, RequireAuth } from "./routes/guards";
+import { GuestOnly, RequireAdmin, RequireAuth } from "./routes/guards";
 import { Layout } from "./components/Layout";
 import { LoginPage } from "./pages/LoginPage";
 import { HomePage } from "./pages/HomePage";
+import { UsersPage } from "./pages/UsersPage";
 
 function App() {
   return (
@@ -14,6 +15,9 @@ function App() {
       <Route element={<RequireAuth />}>
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
+          <Route element={<RequireAdmin />}>
+            <Route path="/users" element={<UsersPage />} />
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
