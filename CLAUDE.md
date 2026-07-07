@@ -14,6 +14,9 @@ This is a Bun workspace monorepo with two packages: `client` (Vite/React) and `s
 bun run dev             # runs both client and server dev servers concurrently (bun --filter '*' dev)
 bun run dev:client       # client only -> http://localhost:5173
 bun run dev:server       # server only -> http://localhost:3001 (bun --watch)
+bun run test:e2e         # migrates/seeds the test DB, then runs Playwright against it
+bun run test:e2e:setup   # just the test DB migrate+seed step (idempotent)
+bun run test:e2e:ui      # test:e2e, but with the Playwright UI runner
 ```
 
 Client (`cd client`):
@@ -32,7 +35,9 @@ bun run db:studio         # prisma studio
 bun run db:seed           # bun prisma/seed.ts - creates the admin user from ADMIN_EMAIL/ADMIN_PASSWORD env vars
 ```
 
-There is no test suite in this repo yet.
+E2E testing runs on Playwright against an isolated test database (`helpdesk_test`, server on port 3002, client on port 5174 — see `playwright.config.ts` and `server/.env.test`), configured via `test:e2e*` scripts above. No test files exist yet. Conventions for writing them (selectors, auth/session handling, what's actually implemented vs. planned) live in `.claude/agents/e2e-tester.md`, not here — use that subagent rather than duplicating its guidance in this file.
+
+**Whenever the login page (`client/src/pages/LoginPage.tsx`) needs test coverage — writing new tests, extending existing ones, or verifying a change to the login/auth flow still works — delegate to the `e2e-tester` subagent instead of writing or editing Playwright specs directly.** It already knows the seeded test-DB admin credentials (`ADMIN_EMAIL`/`ADMIN_PASSWORD` in `server/.env.test`), the login form's actual markup/selectors, and how `GuestOnly`/`RequireAuth` redirect behavior around `/login` is supposed to work, so it won't need to rediscover that context. This applies even to small asks like "add a test for wrong password" or "check login still works after this change" — route those to `e2e-tester` rather than handling them inline.
 
 ## Architecture
 
