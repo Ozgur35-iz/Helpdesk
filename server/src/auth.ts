@@ -11,6 +11,15 @@ export const auth = betterAuth({
     enabled: true,
     disableSignUp: true,
   },
+  rateLimit: {
+    enabled: true,
+    customRules: {
+      "/sign-in/email": {
+        window: 30,
+        max: 4,
+      },
+    },
+  },
   user: {
     additionalFields: {
       role: {
