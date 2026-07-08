@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 type User = {
   id: string;
@@ -8,6 +9,8 @@ type User = {
   role: string;
   createdAt: string;
 };
+
+const MIN_SKELETON_MS = 2000;
 
 export function UsersPage() {
   const {
@@ -19,7 +22,15 @@ export function UsersPage() {
     queryFn: async () => (await axios.get<User[]>("/api/users")).data,
   });
 
-  if (isLoading) return <p>Loading...</p>;
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMinTimeElapsed(true), MIN_SKELETON_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const showSkeleton = isLoading || !minTimeElapsed;
+
   if (error) return <p className="auth-error">{axios.isAxiosError(error) ? (error.response?.data?.error ?? "Failed to load users") : error.message}</p>;
 
   return (
@@ -35,14 +46,31 @@ export function UsersPage() {
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => (
-            <tr key={user.id}>
-              <td>{user.name}</td>
-              <td>{user.email}</td>
-              <td>{user.role}</td>
-              <td>{new Date(user.createdAt).toLocaleDateString()}</td>
-            </tr>
-          ))}
+          {showSkeleton
+            ? Array.from({ length: 5 }, (_, i) => (
+                <tr key={i}>
+                  <td>
+                    <span className="skeleton" />
+                  </td>
+                  <td>
+                    <span className="skeleton" />
+                  </td>
+                  <td>
+                    <span className="skeleton skeleton-short" />
+                  </td>
+                  <td>
+                    <span className="skeleton skeleton-short" />
+                  </td>
+                </tr>
+              ))
+            : users.map((user) => (
+                <tr key={user.id}>
+                  <td>{user.name}</td>
+                  <td>{user.email}</td>
+                  <td>{user.role}</td>
+                  <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                </tr>
+              ))}
         </tbody>
       </table>
     </div>
