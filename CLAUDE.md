@@ -21,9 +21,11 @@ bun run test:e2e:ui      # test:e2e, but with the Playwright UI runner
 
 Client (`cd client`):
 ```bash
-bun run build            # tsc -b && vite build
-bun run lint              # oxlint
-bun x tsc -b --noEmit     # typecheck only, no emit
+bun run build                  # tsc -b && vite build
+bun run lint                    # oxlint
+bun x tsc -b --noEmit           # typecheck only, no emit
+bun run test:component          # vitest run - runs component tests once
+bun run test:component:watch    # vitest - watch mode
 ```
 
 Server (`cd server`):
@@ -38,6 +40,16 @@ bun run db:seed           # bun prisma/seed.ts - creates the admin user from ADM
 E2E testing runs on Playwright against an isolated test database (`helpdesk_test`, server on port 3002, client on port 5174 — see `playwright.config.ts` and `server/.env.test`), configured via `test:e2e*` scripts above. No test files exist yet. Conventions for writing them (selectors, auth/session handling, what's actually implemented vs. planned) live in `.claude/agents/e2e-tester.md`, not here — use that subagent rather than duplicating its guidance in this file.
 
 **Whenever the login page (`client/src/pages/LoginPage.tsx`) needs test coverage — writing new tests, extending existing ones, or verifying a change to the login/auth flow still works — delegate to the `e2e-tester` subagent instead of writing or editing Playwright specs directly.** It already knows the seeded test-DB admin credentials (`ADMIN_EMAIL`/`ADMIN_PASSWORD` in `server/.env.test`), the login form's actual markup/selectors, and how `GuestOnly`/`RequireAuth` redirect behavior around `/login` is supposed to work, so it won't need to rediscover that context. This applies even to small asks like "add a test for wrong password" or "check login still works after this change" — route those to `e2e-tester` rather than handling them inline.
+
+### Component tests
+
+Component tests use **Vitest + React Testing Library**, run against `jsdom`, and live next to the component they cover as `*.test.tsx` (e.g. `client/src/pages/UsersPage.test.tsx`). Run them with `bun run test:component` (single run) or `bun run test:component:watch` (watch mode) from `client/`.
+
+- Config lives in `client/vite.config.ts` under the `test` key (`environment: 'jsdom'`, `globals: true`, `setupFiles: ['./src/test/setup.ts']`). `globals: true` means `describe`/`it`/`expect`/`vi`/etc. are available without importing them; `tsconfig.app.json` includes `vitest/globals` and `@testing-library/jest-dom` types for that to typecheck.
+- `client/src/test/setup.ts` wires up `@testing-library/jest-dom/vitest` matchers (`toBeInTheDocument()`, etc.) for every test file.
+- Any component under test that uses TanStack Query needs a `QueryClientProvider` ancestor. Use the shared `renderWithQuery` helper from `client/src/test/renderWithQuery.tsx` instead of hand-rolling a `QueryClient`/`QueryClientProvider` wrapper per test file — it creates a fresh `QueryClient` per render with `retry: false` (so failed-request tests don't hang retrying) and renders via RTL's `render`.
+- Mock `axios` at the module level with `vi.mock("axios", () => ({ default: { get: vi.fn(), isAxiosError: vi.fn() } }))`, then get typed handles via `vi.mocked(axios.get)` / `vi.mocked(axios.isAxiosError)`. Reset both mocks in `beforeEach`. See `UsersPage.test.tsx` for the full pattern, including asserting both the axios-error branch (`response.data.error`) and the generic `error.message` fallback.
+- For components with real timers in their logic (e.g. `UsersPage`'s `MIN_SKELETON_MS` skeleton delay), use `vi.useFakeTimers()` scoped to the individual test that needs it (not globally in `beforeEach`) — RTL's `findBy*`/`waitFor` poll using real timers under the hood, so leaving fake timers on for every test makes those queries hang. Advance time inside `await act(async () => { await vi.advanceTimersByTimeAsync(ms) })`, and always pair with `vi.useRealTimers()` in `afterEach`.
 
 ## Architecture
 

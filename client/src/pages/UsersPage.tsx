@@ -31,7 +31,14 @@ export function UsersPage() {
 
   const showSkeleton = isLoading || !minTimeElapsed;
 
-  if (error) return <p className="auth-error">{axios.isAxiosError(error) ? (error.response?.data?.error ?? "Failed to load users") : error.message}</p>;
+  if (error)
+    return (
+      <p className="auth-error">
+        {axios.isAxiosError(error)
+          ? (error.response?.data?.error ?? "Failed to load users")
+          : error.message}
+      </p>
+    );
 
   return (
     <div className="users-page">
