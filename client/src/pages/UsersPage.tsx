@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 
 type User = {
   id: string;
@@ -9,23 +10,17 @@ type User = {
 };
 
 export function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/users")
-      .then(async (res) => {
-        if (!res.ok) throw new Error((await res.json()).error ?? "Failed to load users");
-        return res.json();
-      })
-      .then(setUsers)
-      .catch((err) => setError(err.message))
-      .finally(() => setIsLoading(false));
-  }, []);
+  const {
+    data: users = [],
+    error,
+    isLoading,
+  } = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => (await axios.get<User[]>("/api/users")).data,
+  });
 
   if (isLoading) return <p>Loading...</p>;
-  if (error) return <p className="auth-error">{error}</p>;
+  if (error) return <p className="auth-error">{axios.isAxiosError(error) ? (error.response?.data?.error ?? "Failed to load users") : error.message}</p>;
 
   return (
     <div className="users-page">
