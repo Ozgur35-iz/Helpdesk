@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,60 +7,55 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog } from "@ark-ui/react/dialog";
 import { Field } from "@ark-ui/react/field";
 
-const createUserSchema = z.object({
+const editUserSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.email("Enter a valid email"),
-  password: z.string().min(5, "Password must be at least 5 characters"),
+  password: z.union([z.literal(""), z.string().min(5, "Password must be at least 5 characters")]),
 });
 
-type CreateUserFormValues = z.infer<typeof createUserSchema>;
+type EditUserFormValues = z.infer<typeof editUserSchema>;
 
-type CreateUserModalProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+type EditUserModalProps = {
+  user: { id: string; name: string; email: string };
+  onClose: () => void;
 };
 
-export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
+export function EditUserModal({ user, onClose }: EditUserModalProps) {
   const queryClient = useQueryClient();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
-    reset,
     formState: { errors },
-  } = useForm<CreateUserFormValues>({ resolver: zodResolver(createUserSchema) });
-
-  useEffect(() => {
-    if (!open) {
-      reset();
-      setServerError(null);
-    }
-  }, [open, reset]);
+  } = useForm<EditUserFormValues>({
+    resolver: zodResolver(editUserSchema),
+    defaultValues: { name: user.name, email: user.email, password: "" },
+  });
 
   const mutation = useMutation({
-    mutationFn: (values: CreateUserFormValues) => axios.post("/api/users", values),
+    mutationFn: (values: EditUserFormValues) => axios.patch(`/api/users/${user.id}`, values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      onOpenChange(false);
+      onClose();
     },
     onError: (err) => {
       setServerError(
-        axios.isAxiosError(err) ? (err.response?.data?.error ?? "Failed to create user") : err.message,
+        axios.isAxiosError(err) ? (err.response?.data?.error ?? "Failed to update user") : err.message,
       );
     },
   });
 
-  const onSubmit = (values: CreateUserFormValues) => {
+  const onSubmit = (values: EditUserFormValues) => {
     setServerError(null);
     mutation.mutate(values);
   };
 
   return (
-    <Dialog.Root open={open} onOpenChange={(d) => onOpenChange(d.open)} unmountOnExit>
+    <Dialog.Root open={true} onOpenChange={(d) => { if (!d.open) onClose(); }}>
       <Dialog.Backdrop className="modal-backdrop" />
       <Dialog.Positioner className="modal-positioner">
         <Dialog.Content className="modal-content">
-          <Dialog.Title>Create User</Dialog.Title>
+          <Dialog.Title>Edit User</Dialog.Title>
           <form onSubmit={handleSubmit(onSubmit)} className="login-form" autoComplete="off" noValidate>
             {serverError && (
               <p className="auth-error" role="alert">
@@ -92,6 +87,7 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
               <Field.Input
                 type="password"
                 autoComplete="new-password"
+                placeholder="Leave blank to keep current password"
                 {...register("password")}
                 className={errors.password ? "field-invalid" : undefined}
               />
@@ -100,7 +96,7 @@ export function CreateUserModal({ open, onOpenChange }: CreateUserModalProps) {
               )}
             </Field.Root>
             <button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? "Creating..." : "Create"}
+              {mutation.isPending ? "Saving..." : "Save"}
             </button>
           </form>
         </Dialog.Content>

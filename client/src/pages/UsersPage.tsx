@@ -2,6 +2,7 @@ import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { CreateUserModal } from "../components/CreateUserModal";
+import { EditUserModal } from "../components/EditUserModal";
 
 type User = {
   id: string;
@@ -25,6 +26,7 @@ export function UsersPage() {
 
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setMinTimeElapsed(true), MIN_SKELETON_MS);
@@ -57,6 +59,7 @@ export function UsersPage() {
             <th>Email</th>
             <th>Role</th>
             <th>Created</th>
+            <th>Edit</th>
           </tr>
         </thead>
         <tbody>
@@ -75,6 +78,9 @@ export function UsersPage() {
                   <td>
                     <span className="skeleton skeleton-short" />
                   </td>
+                  <td>
+                    <span className="skeleton skeleton-short" />
+                  </td>
                 </tr>
               ))
             : users.map((user) => (
@@ -83,11 +89,19 @@ export function UsersPage() {
                   <td>{user.email}</td>
                   <td>{user.role}</td>
                   <td>{new Date(user.createdAt).toLocaleDateString()}</td>
+                  <td>
+                    <button type="button" aria-label={`Edit ${user.name}`} onClick={() => setEditingUser(user)}>
+                      Edit
+                    </button>
+                  </td>
                 </tr>
               ))}
         </tbody>
       </table>
       <CreateUserModal open={modalOpen} onOpenChange={setModalOpen} />
+      {editingUser && (
+        <EditUserModal key={editingUser.id} user={editingUser} onClose={() => setEditingUser(null)} />
+      )}
     </div>
   );
 }

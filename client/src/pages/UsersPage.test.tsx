@@ -1,4 +1,4 @@
-import { act, screen } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axios from "axios";
 import { UsersPage } from "./UsersPage";
@@ -8,12 +8,14 @@ vi.mock("axios", () => ({
   default: {
     get: vi.fn(),
     post: vi.fn(),
+    patch: vi.fn(),
     isAxiosError: vi.fn(),
   },
 }));
 
 const mockedGet = vi.mocked(axios.get);
 const mockedPost = vi.mocked(axios.post);
+const mockedPatch = vi.mocked(axios.patch);
 const mockedIsAxiosError = vi.mocked(axios.isAxiosError);
 
 function renderUsersPage() {
@@ -40,6 +42,7 @@ const users = [
 beforeEach(() => {
   mockedGet.mockReset();
   mockedPost.mockReset();
+  mockedPatch.mockReset();
   mockedIsAxiosError.mockReset();
 });
 
@@ -158,4 +161,55 @@ it("creates a user via the modal and refreshes the list", async () => {
     password: "hunter2",
   });
   expect(screen.queryByRole("heading", { name: "Create User" })).not.toBeInTheDocument();
+});
+
+it("gives each row's Edit button a distinct accessible name", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValue({ data: users });
+
+  renderUsersPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+  vi.useRealTimers();
+
+  expect(screen.getByRole("button", { name: "Edit Ada Lovelace" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Edit Alan Turing" })).toBeInTheDocument();
+});
+
+it("opens the edit modal pre-filled with the row's data and updates the list on save", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValueOnce({ data: users });
+
+  renderUsersPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+  vi.useRealTimers();
+
+  const editor = userEvent.setup();
+  await editor.click(screen.getByRole("button", { name: "Edit Ada Lovelace" }));
+
+  expect(await screen.findByRole("heading", { name: "Edit User" })).toBeInTheDocument();
+  const dialog = screen.getByRole("dialog");
+  expect(within(dialog).getByLabelText("Name")).toHaveValue("Ada Lovelace");
+  expect(within(dialog).getByLabelText("Email")).toHaveValue("ada@example.com");
+
+  const updatedUser = { ...users[0], name: "Ada King" };
+  mockedPatch.mockResolvedValue({ data: updatedUser });
+  mockedGet.mockResolvedValueOnce({ data: [updatedUser, users[1]] });
+
+  await editor.clear(within(dialog).getByLabelText("Name"));
+  await editor.type(within(dialog).getByLabelText("Name"), "Ada King");
+  await editor.click(within(dialog).getByRole("button", { name: "Save" }));
+
+  expect(await screen.findByText("Ada King")).toBeInTheDocument();
+  expect(mockedPatch).toHaveBeenCalledWith("/api/users/1", {
+    name: "Ada King",
+    email: "ada@example.com",
+    password: "",
+  });
+  expect(screen.queryByRole("heading", { name: "Edit User" })).not.toBeInTheDocument();
 });
