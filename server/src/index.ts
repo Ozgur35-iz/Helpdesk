@@ -1,7 +1,8 @@
 import express from "express";
-import { toNodeHandler, fromNodeHeaders } from "better-auth/node";
+import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth";
 import { prisma } from "./db";
+import { usersRouter } from "./routes/users";
 
 const app = express();
 const port = process.env.PORT ?? 3001;
@@ -19,23 +20,7 @@ app.get("/api/health", async (_req, res) => {
   }
 });
 
-app.get("/api/users", async (req, res) => {
-  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-  if (!session) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  if (session.user.role !== "admin") {
-    res.status(403).json({ error: "Forbidden" });
-    return;
-  }
-
-  const users = await prisma.user.findMany({
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
-    orderBy: { createdAt: "asc" },
-  });
-  res.json(users);
-});
+app.use("/api/users", usersRouter);
 
 app.listen(port, () => {
   console.log(`Server listening on http://localhost:${port}`);

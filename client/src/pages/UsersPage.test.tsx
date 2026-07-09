@@ -1,4 +1,5 @@
 import { act, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import axios from "axios";
 import { UsersPage } from "./UsersPage";
 import { renderWithQuery } from "../test/renderWithQuery";
@@ -6,11 +7,13 @@ import { renderWithQuery } from "../test/renderWithQuery";
 vi.mock("axios", () => ({
   default: {
     get: vi.fn(),
+    post: vi.fn(),
     isAxiosError: vi.fn(),
   },
 }));
 
 const mockedGet = vi.mocked(axios.get);
+const mockedPost = vi.mocked(axios.post);
 const mockedIsAxiosError = vi.mocked(axios.isAxiosError);
 
 function renderUsersPage() {
@@ -36,6 +39,7 @@ const users = [
 
 beforeEach(() => {
   mockedGet.mockReset();
+  mockedPost.mockReset();
   mockedIsAxiosError.mockReset();
 });
 
@@ -98,4 +102,60 @@ it("falls back to the generic error message when the failure isn't an axios erro
   renderUsersPage();
 
   expect(await screen.findByText("Network down")).toBeInTheDocument();
+});
+
+it("opens the create user modal when the Create User button is clicked", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValue({ data: users });
+
+  renderUsersPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+  vi.useRealTimers();
+
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Create User" }));
+
+  expect(await screen.findByRole("heading", { name: "Create User" })).toBeInTheDocument();
+  expect(screen.getByLabelText("Name")).toBeInTheDocument();
+});
+
+it("creates a user via the modal and refreshes the list", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValueOnce({ data: users });
+
+  renderUsersPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+  vi.useRealTimers();
+
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Create User" }));
+
+  const newUser = {
+    id: "3",
+    name: "Grace Hopper",
+    email: "grace@example.com",
+    role: "agent",
+    createdAt: "2024-07-01T00:00:00.000Z",
+  };
+  mockedPost.mockResolvedValue({ data: newUser });
+  mockedGet.mockResolvedValueOnce({ data: [...users, newUser] });
+
+  await user.type(await screen.findByLabelText("Name"), newUser.name);
+  await user.type(screen.getByLabelText("Email"), newUser.email);
+  await user.type(screen.getByLabelText("Password"), "hunter2");
+  await user.click(screen.getByRole("button", { name: "Create" }));
+
+  expect(await screen.findByText("Grace Hopper")).toBeInTheDocument();
+  expect(mockedPost).toHaveBeenCalledWith("/api/users", {
+    name: newUser.name,
+    email: newUser.email,
+    password: "hunter2",
+  });
+  expect(screen.queryByRole("heading", { name: "Create User" })).not.toBeInTheDocument();
 });

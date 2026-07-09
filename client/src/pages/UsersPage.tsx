@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { CreateUserModal } from "../components/CreateUserModal";
 
 type User = {
   id: string;
@@ -23,6 +24,7 @@ export function UsersPage() {
   });
 
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setMinTimeElapsed(true), MIN_SKELETON_MS);
@@ -42,7 +44,12 @@ export function UsersPage() {
 
   return (
     <div className="users-page">
-      <h1>Users</h1>
+      <div className="users-header">
+        <h1>Users</h1>
+        <button type="button" onClick={() => setModalOpen(true)}>
+          Create User
+        </button>
+      </div>
       <table className="users-table">
         <thead>
           <tr>
@@ -80,6 +87,7 @@ export function UsersPage() {
               ))}
         </tbody>
       </table>
+      <CreateUserModal open={modalOpen} onOpenChange={setModalOpen} />
     </div>
   );
 }

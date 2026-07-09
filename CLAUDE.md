@@ -43,29 +43,13 @@ E2E testing runs on Playwright against an isolated test database (`helpdesk_test
 
 ### Component tests
 
-Component tests use **Vitest + React Testing Library**, run against `jsdom`, and live next to the component they cover as `*.test.tsx` (e.g. `client/src/pages/UsersPage.test.tsx`). Run them with `bun run test:component` (single run) or `bun run test:component:watch` (watch mode) from `client/`.
-
-- Config lives in `client/vite.config.ts` under the `test` key (`environment: 'jsdom'`, `globals: true`, `setupFiles: ['./src/test/setup.ts']`). `globals: true` means `describe`/`it`/`expect`/`vi`/etc. are available without importing them; `tsconfig.app.json` includes `vitest/globals` and `@testing-library/jest-dom` types for that to typecheck.
-- `client/src/test/setup.ts` wires up `@testing-library/jest-dom/vitest` matchers (`toBeInTheDocument()`, etc.) for every test file.
-- Any component under test that uses TanStack Query needs a `QueryClientProvider` ancestor. Use the shared `renderWithQuery` helper from `client/src/test/renderWithQuery.tsx` instead of hand-rolling a `QueryClient`/`QueryClientProvider` wrapper per test file — it creates a fresh `QueryClient` per render with `retry: false` (so failed-request tests don't hang retrying) and renders via RTL's `render`.
-- Mock `axios` at the module level with `vi.mock("axios", () => ({ default: { get: vi.fn(), isAxiosError: vi.fn() } }))`, then get typed handles via `vi.mocked(axios.get)` / `vi.mocked(axios.isAxiosError)`. Reset both mocks in `beforeEach`. See `UsersPage.test.tsx` for the full pattern, including asserting both the axios-error branch (`response.data.error`) and the generic `error.message` fallback.
-- For components with real timers in their logic (e.g. `UsersPage`'s `MIN_SKELETON_MS` skeleton delay), use `vi.useFakeTimers()` scoped to the individual test that needs it (not globally in `beforeEach`) — RTL's `findBy*`/`waitFor` poll using real timers under the hood, so leaving fake timers on for every test makes those queries hang. Advance time inside `await act(async () => { await vi.advanceTimersByTimeAsync(ms) })`, and always pair with `vi.useRealTimers()` in `afterEach`.
+Component tests use Vitest + React Testing Library; see the `component-testing` skill for conventions (run via `bun run test:component` from `client/`).
 
 ## Architecture
 
+Client- and server-specific conventions (route protection, forms, data fetching, roles, generated Prisma, env vars) live in `client/CLAUDE.md` and `server/CLAUDE.md`.
+
 **Auth is the backbone of both apps.** `better-auth` runs on the server (`server/src/auth.ts`) with the Prisma adapter, and is mounted wholesale at `app.all("/api/auth/*splat", toNodeHandler(auth))` in `server/src/index.ts` — before `express.json()`, so better-auth handles its own body parsing. The client talks to it via `better-auth/react`'s `createAuthClient()` (`client/src/lib/auth-client.ts`), with no explicit base URL — it relies on Vite's dev proxy (`client/vite.config.ts`: `/api` → `http://localhost:3001`) to reach the server same-origin. In production, the client and server must be served such that `/api` still reaches the auth server, or `createAuthClient({ baseURL })` needs to be set explicitly.
-
-**Route protection is session-based, not token-based**, driven by `authClient.useSession()`. `client/src/routes/guards.tsx` exports `RequireAuth` (redirects to `/login` if no session) and `GuestOnly` (redirects to `/` if already logged in), both used as wrapping `<Route element={...}>` layouts in `client/src/App.tsx` rather than per-page checks. The authenticated area is further wrapped in `Layout` (adds the `Navbar`); the login page is deliberately outside `Layout` so it renders standalone (see `.login-page` centering in `App.css`).
-
-**Roles** (`admin` | `agent`) live on `User.role` in `server/prisma/schema.prisma`, exposed to better-auth via `user.additionalFields.role` in `auth.ts` with `input: false` — meaning role can never be set through the public sign-up/update API, only via direct DB/adapter access. Sign-up is disabled entirely (`emailAndPassword.disableSignUp: true`); the only way to create a user is `server/prisma/seed.ts`, which creates a single admin using `auth.$context` (`internalAdapter.createUser` + `ctx.password.hash` + `linkAccount`) rather than an HTTP call. There is currently no "admin creates an agent" endpoint — that's planned but not built (see `implementation-plan.md` Phase 3).
-
-**Generated Prisma client is committed to git.** `schema.prisma` outputs to `server/generated/prisma` (not `node_modules`), and that generated directory is tracked in version control rather than gitignored — after any schema change, run `db:generate` (and `db:migrate` for a schema change) and commit the regenerated output along with the migration.
-
-**Env vars** are consumed via `process.env` directly in server code (Bun auto-loads `.env`); the Prisma CLI config (`server/prisma.config.ts`) additionally does an explicit `import "dotenv/config"` since it runs outside Bun's runtime. Known vars: `DATABASE_URL`, `PORT` (server, default 3001), `CLIENT_ORIGIN` (better-auth trusted origin, default `http://localhost:5173`), `ADMIN_EMAIL`/`ADMIN_PASSWORD` (seed script only).
-
-**Forms** use React Hook Form + Zod resolvers, with Ark UI (`@ark-ui/react`, `Field.Root/Label/Input/ErrorText`) as the headless component layer over native inputs — see `client/src/pages/LoginPage.tsx` for the pattern (manual shake-on-error animation via refs + `Field` for markup/accessibility, not for animation).
-
-**Data fetching** on the client uses `axios` (not the raw `fetch` API) for HTTP calls, wrapped in TanStack Query (`@tanstack/react-query`) for server state — `useQuery`/`useMutation` rather than manual `useState`/`useEffect` loading/error juggling. `QueryClientProvider` is set up once in `client/src/main.tsx`. See `client/src/pages/UsersPage.tsx` for the pattern.
 
 ## Stack reality vs. planning docs
 
