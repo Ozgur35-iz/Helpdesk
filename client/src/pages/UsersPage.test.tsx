@@ -9,6 +9,7 @@ vi.mock("axios", () => ({
     get: vi.fn(),
     post: vi.fn(),
     patch: vi.fn(),
+    delete: vi.fn(),
     isAxiosError: vi.fn(),
   },
 }));
@@ -16,6 +17,7 @@ vi.mock("axios", () => ({
 const mockedGet = vi.mocked(axios.get);
 const mockedPost = vi.mocked(axios.post);
 const mockedPatch = vi.mocked(axios.patch);
+const mockedDelete = vi.mocked(axios.delete);
 const mockedIsAxiosError = vi.mocked(axios.isAxiosError);
 
 function renderUsersPage() {
@@ -43,6 +45,7 @@ beforeEach(() => {
   mockedGet.mockReset();
   mockedPost.mockReset();
   mockedPatch.mockReset();
+  mockedDelete.mockReset();
   mockedIsAxiosError.mockReset();
 });
 
@@ -212,4 +215,62 @@ it("opens the edit modal pre-filled with the row's data and updates the list on 
     password: "",
   });
   expect(screen.queryByRole("heading", { name: "Edit User" })).not.toBeInTheDocument();
+});
+
+it("gives each row's Delete button a distinct accessible name", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValue({ data: users });
+
+  renderUsersPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+  vi.useRealTimers();
+
+  expect(screen.getByRole("button", { name: "Delete Ada Lovelace" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Delete Alan Turing" })).toBeInTheDocument();
+});
+
+it("disables the Delete button for admin rows and enables it for agent rows", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValue({ data: users });
+
+  renderUsersPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+  vi.useRealTimers();
+
+  expect(screen.getByRole("button", { name: "Delete Ada Lovelace" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Delete Alan Turing" })).toBeEnabled();
+});
+
+it("deletes a user via the confirmation modal and refreshes the list", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValueOnce({ data: users });
+
+  renderUsersPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+  vi.useRealTimers();
+
+  const editor = userEvent.setup();
+  await editor.click(screen.getByRole("button", { name: "Delete Alan Turing" }));
+
+  expect(await screen.findByRole("heading", { name: "Delete User" })).toBeInTheDocument();
+
+  mockedDelete.mockResolvedValue({ data: { id: "2" } });
+  mockedGet.mockResolvedValueOnce({ data: [users[0]] });
+
+  const dialog = screen.getByRole("dialog");
+  await editor.click(within(dialog).getByRole("button", { name: "Delete" }));
+
+  expect(mockedDelete).toHaveBeenCalledWith("/api/users/2");
+  await screen.findByText("Ada Lovelace");
+  expect(screen.queryByText("Alan Turing")).not.toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Delete User" })).not.toBeInTheDocument();
 });

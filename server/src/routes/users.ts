@@ -31,6 +31,7 @@ usersRouter.get("/", async (req, res) => {
   }
 
   const users = await prisma.user.findMany({
+    where: { deletedAt: null },
     select: { id: true, name: true, email: true, role: true, createdAt: true },
     orderBy: { createdAt: "asc" },
   });
@@ -149,4 +150,31 @@ usersRouter.patch("/:id", async (req, res) => {
     }
     throw err;
   }
+});
+
+usersRouter.delete("/:id", async (req, res) => {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!session) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  if (session.user.role !== "admin") {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const target = await prisma.user.findUnique({ where: { id: req.params.id } });
+  if (!target || target.deletedAt) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  if (target.role === "admin") {
+    res.status(403).json({ error: "Admins cannot be deleted" });
+    return;
+  }
+
+  await prisma.user.update({ where: { id: target.id }, data: { deletedAt: new Date() } });
+  await prisma.session.deleteMany({ where: { userId: target.id } });
+
+  res.status(200).json({ id: target.id });
 });

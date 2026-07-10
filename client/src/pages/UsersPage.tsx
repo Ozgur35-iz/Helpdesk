@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { CreateUserModal } from "../components/CreateUserModal";
 import { EditUserModal } from "../components/EditUserModal";
+import { DeleteUserModal } from "../components/DeleteUserModal";
 
 type User = {
   id: string;
@@ -27,6 +28,7 @@ export function UsersPage() {
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setMinTimeElapsed(true), MIN_SKELETON_MS);
@@ -59,7 +61,7 @@ export function UsersPage() {
             <th>Email</th>
             <th>Role</th>
             <th>Created</th>
-            <th>Edit</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -93,6 +95,14 @@ export function UsersPage() {
                     <button type="button" aria-label={`Edit ${user.name}`} onClick={() => setEditingUser(user)}>
                       Edit
                     </button>
+                    <button
+                      type="button"
+                      aria-label={`Delete ${user.name}`}
+                      disabled={user.role === "admin"}
+                      onClick={() => setDeletingUser(user)}
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -101,6 +111,9 @@ export function UsersPage() {
       <CreateUserModal open={modalOpen} onOpenChange={setModalOpen} />
       {editingUser && (
         <EditUserModal key={editingUser.id} user={editingUser} onClose={() => setEditingUser(null)} />
+      )}
+      {deletingUser && (
+        <DeleteUserModal key={deletingUser.id} user={deletingUser} onClose={() => setDeletingUser(null)} />
       )}
     </div>
   );
