@@ -13,7 +13,15 @@ export default defineConfig({
     baseURL: `http://localhost:${CLIENT_PORT}`,
     trace: "on-first-retry",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "setup", testMatch: /.*\.setup\.ts/ },
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /.*\.spec\.ts/,
+      dependencies: ["setup"],
+    },
+  ],
   webServer: [
     {
       command: "bun run test:server",
