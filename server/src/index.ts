@@ -3,6 +3,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth";
 import { prisma } from "./db";
 import { usersRouter } from "./routes/users";
+import { webhooksRouter } from "./routes/webhooks";
 
 const app = express();
 const port = process.env.PORT ?? 3001;
@@ -21,6 +22,7 @@ app.get("/api/health", async (_req, res) => {
 });
 
 app.use("/api/users", usersRouter);
+app.use("/api/webhooks", webhooksRouter);
 
 app.listen(port, () => {
   console.log(`Server listening on http://localhost:${port}`);

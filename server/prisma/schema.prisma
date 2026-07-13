@@ -72,3 +72,18 @@ model Verification {
   @@index([identifier])
   @@map("verification")
 }
+
+model Ticket {
+  id                Int      @id @default(autoincrement())
+  subject           String
+  body              String
+  requesterEmail    String
+  senderName        String
+  status            String   @default("open")
+  category          String?
+  externalMessageId String?  @unique
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("ticket")
+}

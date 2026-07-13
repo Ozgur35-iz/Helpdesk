@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Prisma } from "../../generated/prisma/client";
 import { auth } from "../auth";
 import { prisma } from "../db";
+import { parseBody } from "../lib/validate";
 
 const createUserSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -49,12 +50,9 @@ usersRouter.post("/", async (req, res) => {
     return;
   }
 
-  const parsed = createUserSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.issues[0].message });
-    return;
-  }
-  const { name, email, password } = parsed.data;
+  const data = parseBody(createUserSchema, req.body, res);
+  if (!data) return;
+  const { name, email, password } = data;
 
   const ctx = await auth.$context;
 
@@ -107,12 +105,9 @@ usersRouter.patch("/:id", async (req, res) => {
     return;
   }
 
-  const parsed = updateUserSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.issues[0].message });
-    return;
-  }
-  const { name, email, password } = parsed.data;
+  const data = parseBody(updateUserSchema, req.body, res);
+  if (!data) return;
+  const { name, email, password } = data;
 
   const ctx = await auth.$context;
 
