@@ -41,6 +41,27 @@ main {
   border-bottom: 1px solid #ddd;
 }
 
+.tickets-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 720px;
+  margin-bottom: 1rem;
+}
+
+.tickets-table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 720px;
+}
+
+.tickets-table th,
+.tickets-table td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid #ddd;
+}
+
 .skeleton {
   display: inline-block;
   width: 100%;

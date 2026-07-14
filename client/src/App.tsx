@@ -5,6 +5,7 @@ import { Layout } from "./components/Layout";
 import { LoginPage } from "./pages/LoginPage";
 import { HomePage } from "./pages/HomePage";
 import { UsersPage } from "./pages/UsersPage";
+import { TicketsPage } from "./pages/TicketsPage";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
       <Route element={<RequireAuth />}>
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/tickets" element={<TicketsPage />} />
           <Route element={<RequireAdmin />}>
             <Route path="/users" element={<UsersPage />} />
           </Route>
