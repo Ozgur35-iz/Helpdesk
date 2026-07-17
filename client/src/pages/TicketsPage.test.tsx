@@ -1,4 +1,4 @@
-import { act, screen } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axios from "axios";
 import { TicketsPage } from "./TicketsPage";
@@ -75,7 +75,7 @@ it("renders the fetched tickets once loading finishes and the minimum skeleton t
   expect(screen.getByText("Can't reset my password")).toBeInTheDocument();
   expect(screen.getByText("Bob Smith <bob@example.com>")).toBeInTheDocument();
   expect(screen.getByText("—")).toBeInTheDocument();
-  expect(screen.getByText("billing")).toBeInTheDocument();
+  expect(screen.getByRole("cell", { name: "billing" })).toBeInTheDocument();
   expect(
     screen.getByText(new Date(tickets[0].createdAt).toLocaleString()),
   ).toBeInTheDocument();
@@ -149,4 +149,96 @@ it("does not attach a sort handler to the non-sortable Requester column", async 
 
   const requesterHeader = await screen.findByText("Requester");
   expect(requesterHeader.className).not.toContain("sortable");
+});
+
+it("re-fetches with the selected status filter", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValue({ data: tickets });
+
+  renderTicketsPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+
+  vi.useRealTimers();
+  mockedGet.mockClear();
+
+  const user = userEvent.setup();
+  await user.selectOptions(screen.getByLabelText("Filter by status"), "pending");
+
+  await waitFor(() =>
+    expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
+      params: { sortBy: "createdAt", sortOrder: "desc", status: "pending" },
+    }),
+  );
+});
+
+it("re-fetches with 'none' when the None category option is selected", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValue({ data: tickets });
+
+  renderTicketsPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+
+  vi.useRealTimers();
+  mockedGet.mockClear();
+
+  const user = userEvent.setup();
+  await user.selectOptions(screen.getByLabelText("Filter by category"), "none");
+
+  await waitFor(() =>
+    expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
+      params: { sortBy: "createdAt", sortOrder: "desc", category: "none" },
+    }),
+  );
+});
+
+it("re-fetches with the subject search text after the debounce delay", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValue({ data: tickets });
+
+  renderTicketsPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+
+  vi.useRealTimers();
+  mockedGet.mockClear();
+
+  const user = userEvent.setup();
+  await user.type(screen.getByLabelText("Search subject"), "billing");
+
+  await waitFor(() =>
+    expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
+      params: { sortBy: "createdAt", sortOrder: "desc", subject: "billing" },
+    }),
+  );
+});
+
+it("re-fetches with the requester search text after the debounce delay", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValue({ data: tickets });
+
+  renderTicketsPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+
+  vi.useRealTimers();
+  mockedGet.mockClear();
+
+  const user = userEvent.setup();
+  await user.type(screen.getByLabelText("Search requester"), "ada");
+
+  await waitFor(() =>
+    expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
+      params: { sortBy: "createdAt", sortOrder: "desc", requester: "ada" },
+    }),
+  );
 });

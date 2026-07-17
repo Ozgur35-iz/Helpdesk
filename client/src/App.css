@@ -49,6 +49,19 @@ main {
   margin-bottom: 1rem;
 }
 
+.tickets-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: 720px;
+  margin-bottom: 1rem;
+}
+
+.tickets-filters input,
+.tickets-filters select {
+  padding: 0.4rem 0.6rem;
+}
+
 .tickets-table {
   border-collapse: collapse;
   width: 100%;

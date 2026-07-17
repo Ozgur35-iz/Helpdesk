@@ -20,7 +20,10 @@ type Ticket = {
 };
 
 const MIN_SKELETON_MS = 2000;
+const FILTER_DEBOUNCE_MS = 300;
 const DEFAULT_SORTING: SortingState = [{ id: "createdAt", desc: true }];
+const STATUS_OPTIONS = ["open", "pending", "resolved", "closed"];
+const CATEGORY_OPTIONS = ["billing", "technical", "account", "refund"];
 
 const columnHelper = createColumnHelper<Ticket>();
 
@@ -47,16 +50,48 @@ export function TicketsPage() {
   const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
   const sort = sorting[0] ?? DEFAULT_SORTING[0];
 
+  const [statusFilter, setStatusFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [subjectInput, setSubjectInput] = useState("");
+  const [requesterInput, setRequesterInput] = useState("");
+  const [subjectFilter, setSubjectFilter] = useState("");
+  const [requesterFilter, setRequesterFilter] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSubjectFilter(subjectInput.trim()), FILTER_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [subjectInput]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setRequesterFilter(requesterInput.trim()), FILTER_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [requesterInput]);
+
   const {
     data: tickets = [],
     error,
     isLoading,
   } = useQuery({
-    queryKey: ["tickets", sort.id, sort.desc],
+    queryKey: [
+      "tickets",
+      sort.id,
+      sort.desc,
+      statusFilter,
+      categoryFilter,
+      subjectFilter,
+      requesterFilter,
+    ],
     queryFn: async () =>
       (
         await axios.get<Ticket[]>("/api/tickets", {
-          params: { sortBy: sort.id, sortOrder: sort.desc ? "desc" : "asc" },
+          params: {
+            sortBy: sort.id,
+            sortOrder: sort.desc ? "desc" : "asc",
+            status: statusFilter || undefined,
+            category: categoryFilter || undefined,
+            subject: subjectFilter || undefined,
+            requester: requesterFilter || undefined,
+          },
         })
       ).data,
   });
@@ -93,6 +128,47 @@ export function TicketsPage() {
     <div className="tickets-page">
       <div className="tickets-header">
         <h1>Tickets</h1>
+      </div>
+      <div className="tickets-filters">
+        <input
+          type="text"
+          placeholder="Search subject…"
+          value={subjectInput}
+          onChange={(e) => setSubjectInput(e.target.value)}
+          aria-label="Search subject"
+        />
+        <input
+          type="text"
+          placeholder="Search requester…"
+          value={requesterInput}
+          onChange={(e) => setRequesterInput(e.target.value)}
+          aria-label="Search requester"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          aria-label="Filter by status"
+        >
+          <option value="">All statuses</option>
+          {STATUS_OPTIONS.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          aria-label="Filter by category"
+        >
+          <option value="">All categories</option>
+          {CATEGORY_OPTIONS.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+          <option value="none">None</option>
+        </select>
       </div>
       <table className="tickets-table">
         <thead>
