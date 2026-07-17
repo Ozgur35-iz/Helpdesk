@@ -62,6 +62,11 @@ main {
   border-bottom: 1px solid #ddd;
 }
 
+.tickets-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
 .skeleton {
   display: inline-block;
   width: 100%;

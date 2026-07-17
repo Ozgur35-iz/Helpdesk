@@ -1,4 +1,5 @@
 import { act, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import axios from "axios";
 import { TicketsPage } from "./TicketsPage";
 import { renderWithQuery } from "../test/renderWithQuery";
@@ -103,4 +104,49 @@ it("falls back to the generic error message when the failure isn't an axios erro
   renderTicketsPage();
 
   expect(await screen.findByText("Network down")).toBeInTheDocument();
+});
+
+it("fetches tickets sorted by createdAt desc by default", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValue({ data: tickets });
+
+  renderTicketsPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+
+  expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
+    params: { sortBy: "createdAt", sortOrder: "desc" },
+  });
+});
+
+it("re-fetches with the clicked column's sort params when a sortable header is clicked", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValue({ data: tickets });
+
+  renderTicketsPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+
+  vi.useRealTimers();
+  mockedGet.mockClear();
+
+  const user = userEvent.setup();
+  await user.click(screen.getByText("Subject"));
+
+  expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
+    params: { sortBy: "subject", sortOrder: "asc" },
+  });
+});
+
+it("does not attach a sort handler to the non-sortable Requester column", async () => {
+  mockedGet.mockResolvedValue({ data: tickets });
+
+  renderTicketsPage();
+
+  const requesterHeader = await screen.findByText("Requester");
+  expect(requesterHeader.className).not.toContain("sortable");
 });
