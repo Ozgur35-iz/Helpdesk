@@ -19,8 +19,16 @@ type Ticket = {
   createdAt: string;
 };
 
+type TicketsResponse = {
+  data: Ticket[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 const MIN_SKELETON_MS = 2000;
 const FILTER_DEBOUNCE_MS = 300;
+const PAGE_SIZE = 10;
 const DEFAULT_SORTING: SortingState = [{ id: "createdAt", desc: true }];
 const STATUS_OPTIONS = ["open", "pending", "resolved", "closed"];
 const CATEGORY_OPTIONS = ["billing", "technical", "account", "refund"];
@@ -67,8 +75,14 @@ export function TicketsPage() {
     return () => clearTimeout(timer);
   }, [requesterInput]);
 
+  const [pageIndex, setPageIndex] = useState(0);
+
+  useEffect(() => {
+    setPageIndex(0);
+  }, [sort.id, sort.desc, statusFilter, categoryFilter, subjectFilter, requesterFilter]);
+
   const {
-    data: tickets = [],
+    data: response,
     error,
     isLoading,
   } = useQuery({
@@ -80,10 +94,11 @@ export function TicketsPage() {
       categoryFilter,
       subjectFilter,
       requesterFilter,
+      pageIndex,
     ],
     queryFn: async () =>
       (
-        await axios.get<Ticket[]>("/api/tickets", {
+        await axios.get<TicketsResponse>("/api/tickets", {
           params: {
             sortBy: sort.id,
             sortOrder: sort.desc ? "desc" : "asc",
@@ -91,10 +106,16 @@ export function TicketsPage() {
             category: categoryFilter || undefined,
             subject: subjectFilter || undefined,
             requester: requesterFilter || undefined,
+            page: pageIndex + 1,
+            pageSize: PAGE_SIZE,
           },
         })
       ).data,
   });
+
+  const tickets = response?.data ?? [];
+  const total = response?.total ?? 0;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const table = useReactTable({
     data: tickets,
@@ -218,6 +239,19 @@ export function TicketsPage() {
               ))}
         </tbody>
       </table>
+      {!showSkeleton && (
+        <div className="tickets-pagination">
+          <button onClick={() => setPageIndex((p) => p - 1)} disabled={pageIndex === 0}>
+            Previous
+          </button>
+          <span>
+            Page {pageIndex + 1} of {pageCount} ({total} total)
+          </span>
+          <button onClick={() => setPageIndex((p) => p + 1)} disabled={pageIndex + 1 >= pageCount}>
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

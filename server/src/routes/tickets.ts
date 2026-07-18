@@ -17,6 +17,8 @@ const ticketsQuerySchema = z.object({
   category: z.enum([...categoryValues, "none"]).optional(),
   subject: z.string().trim().min(1).optional(),
   requester: z.string().trim().min(1).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(10),
 });
 
 export const ticketsRouter = Router();
@@ -42,9 +44,14 @@ ticketsRouter.get("/", async (req, res) => {
     ];
   }
 
-  const tickets = await prisma.ticket.findMany({
-    where,
-    orderBy: { [query.sortBy]: query.sortOrder },
-  });
-  res.json(tickets);
+  const [tickets, total] = await Promise.all([
+    prisma.ticket.findMany({
+      where,
+      orderBy: { [query.sortBy]: query.sortOrder },
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+    }),
+    prisma.ticket.count({ where }),
+  ]);
+  res.json({ data: tickets, total, page: query.page, pageSize: query.pageSize });
 });

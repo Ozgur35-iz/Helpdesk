@@ -39,6 +39,10 @@ const tickets = [
   },
 ];
 
+function ticketsResponse(data: typeof tickets, total = data.length) {
+  return { data, total, page: 1, pageSize: 10 };
+}
+
 beforeEach(() => {
   mockedGet.mockReset();
   mockedIsAxiosError.mockReset();
@@ -64,7 +68,7 @@ it("shows skeleton placeholder rows while the request is in flight", async () =>
 
 it("renders the fetched tickets once loading finishes and the minimum skeleton time has elapsed", async () => {
   vi.useFakeTimers();
-  mockedGet.mockResolvedValue({ data: tickets });
+  mockedGet.mockResolvedValue({ data: ticketsResponse(tickets) });
 
   renderTicketsPage();
 
@@ -106,9 +110,9 @@ it("falls back to the generic error message when the failure isn't an axios erro
   expect(await screen.findByText("Network down")).toBeInTheDocument();
 });
 
-it("fetches tickets sorted by createdAt desc by default", async () => {
+it("fetches tickets sorted by createdAt desc, page 1, by default", async () => {
   vi.useFakeTimers();
-  mockedGet.mockResolvedValue({ data: tickets });
+  mockedGet.mockResolvedValue({ data: ticketsResponse(tickets) });
 
   renderTicketsPage();
 
@@ -117,13 +121,13 @@ it("fetches tickets sorted by createdAt desc by default", async () => {
   });
 
   expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
-    params: { sortBy: "createdAt", sortOrder: "desc" },
+    params: { sortBy: "createdAt", sortOrder: "desc", page: 1, pageSize: 10 },
   });
 });
 
 it("re-fetches with the clicked column's sort params when a sortable header is clicked", async () => {
   vi.useFakeTimers();
-  mockedGet.mockResolvedValue({ data: tickets });
+  mockedGet.mockResolvedValue({ data: ticketsResponse(tickets) });
 
   renderTicketsPage();
 
@@ -138,12 +142,12 @@ it("re-fetches with the clicked column's sort params when a sortable header is c
   await user.click(screen.getByText("Subject"));
 
   expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
-    params: { sortBy: "subject", sortOrder: "asc" },
+    params: { sortBy: "subject", sortOrder: "asc", page: 1, pageSize: 10 },
   });
 });
 
 it("does not attach a sort handler to the non-sortable Requester column", async () => {
-  mockedGet.mockResolvedValue({ data: tickets });
+  mockedGet.mockResolvedValue({ data: ticketsResponse(tickets) });
 
   renderTicketsPage();
 
@@ -153,7 +157,7 @@ it("does not attach a sort handler to the non-sortable Requester column", async 
 
 it("re-fetches with the selected status filter", async () => {
   vi.useFakeTimers();
-  mockedGet.mockResolvedValue({ data: tickets });
+  mockedGet.mockResolvedValue({ data: ticketsResponse(tickets) });
 
   renderTicketsPage();
 
@@ -169,14 +173,14 @@ it("re-fetches with the selected status filter", async () => {
 
   await waitFor(() =>
     expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
-      params: { sortBy: "createdAt", sortOrder: "desc", status: "pending" },
+      params: { sortBy: "createdAt", sortOrder: "desc", status: "pending", page: 1, pageSize: 10 },
     }),
   );
 });
 
 it("re-fetches with 'none' when the None category option is selected", async () => {
   vi.useFakeTimers();
-  mockedGet.mockResolvedValue({ data: tickets });
+  mockedGet.mockResolvedValue({ data: ticketsResponse(tickets) });
 
   renderTicketsPage();
 
@@ -192,14 +196,14 @@ it("re-fetches with 'none' when the None category option is selected", async () 
 
   await waitFor(() =>
     expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
-      params: { sortBy: "createdAt", sortOrder: "desc", category: "none" },
+      params: { sortBy: "createdAt", sortOrder: "desc", category: "none", page: 1, pageSize: 10 },
     }),
   );
 });
 
 it("re-fetches with the subject search text after the debounce delay", async () => {
   vi.useFakeTimers();
-  mockedGet.mockResolvedValue({ data: tickets });
+  mockedGet.mockResolvedValue({ data: ticketsResponse(tickets) });
 
   renderTicketsPage();
 
@@ -215,14 +219,14 @@ it("re-fetches with the subject search text after the debounce delay", async () 
 
   await waitFor(() =>
     expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
-      params: { sortBy: "createdAt", sortOrder: "desc", subject: "billing" },
+      params: { sortBy: "createdAt", sortOrder: "desc", subject: "billing", page: 1, pageSize: 10 },
     }),
   );
 });
 
 it("re-fetches with the requester search text after the debounce delay", async () => {
   vi.useFakeTimers();
-  mockedGet.mockResolvedValue({ data: tickets });
+  mockedGet.mockResolvedValue({ data: ticketsResponse(tickets) });
 
   renderTicketsPage();
 
@@ -238,7 +242,73 @@ it("re-fetches with the requester search text after the debounce delay", async (
 
   await waitFor(() =>
     expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
-      params: { sortBy: "createdAt", sortOrder: "desc", requester: "ada" },
+      params: { sortBy: "createdAt", sortOrder: "desc", requester: "ada", page: 1, pageSize: 10 },
+    }),
+  );
+});
+
+it("shows the page count and disables Next when there's only one page", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValue({ data: ticketsResponse(tickets) });
+
+  renderTicketsPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+
+  expect(screen.getByText("Page 1 of 1 (2 total)")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+});
+
+it("fetches the next page when Next is clicked and there are more pages", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValue({ data: ticketsResponse(tickets, 25) });
+
+  renderTicketsPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+
+  expect(screen.getByText("Page 1 of 3 (25 total)")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
+
+  vi.useRealTimers();
+  mockedGet.mockClear();
+
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Next" }));
+
+  expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
+    params: { sortBy: "createdAt", sortOrder: "desc", page: 2, pageSize: 10 },
+  });
+});
+
+it("resets back to page 1 when a filter changes after navigating forward", async () => {
+  vi.useFakeTimers();
+  mockedGet.mockResolvedValue({ data: ticketsResponse(tickets, 25) });
+
+  renderTicketsPage();
+
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(2000);
+  });
+
+  vi.useRealTimers();
+
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Next" }));
+  await waitFor(() => expect(screen.getByText("Page 2 of 3 (25 total)")).toBeInTheDocument());
+
+  mockedGet.mockClear();
+  await user.selectOptions(screen.getByLabelText("Filter by status"), "pending");
+
+  await waitFor(() =>
+    expect(mockedGet).toHaveBeenCalledWith("/api/tickets", {
+      params: { sortBy: "createdAt", sortOrder: "desc", status: "pending", page: 1, pageSize: 10 },
     }),
   );
 });

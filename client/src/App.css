@@ -80,6 +80,14 @@ main {
   user-select: none;
 }
 
+.tickets-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 720px;
+  margin-top: 1rem;
+}
+
 .skeleton {
   display: inline-block;
   width: 100%;
