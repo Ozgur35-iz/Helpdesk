@@ -88,6 +88,39 @@ main {
   margin-top: 1rem;
 }
 
+.tickets-table tbody tr.clickable-row:hover {
+  background: #f5f5f5;
+  cursor: pointer;
+}
+
+.ticket-detail-page {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ticket-detail-fields {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0;
+}
+
+.ticket-detail-fields dt {
+  font-weight: 600;
+}
+
+.ticket-detail-fields dd {
+  margin: 0;
+}
+
+.ticket-detail-body {
+  white-space: pre-wrap;
+  border-top: 1px solid #ddd;
+  padding-top: 1rem;
+}
+
 .skeleton {
   display: inline-block;
   width: 100%;

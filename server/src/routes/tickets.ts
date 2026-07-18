@@ -21,6 +21,8 @@ const ticketsQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
 });
 
+const ticketIdParamSchema = z.object({ id: z.coerce.number().int().positive() });
+
 export const ticketsRouter = Router();
 
 ticketsRouter.get("/", async (req, res) => {
@@ -54,4 +56,22 @@ ticketsRouter.get("/", async (req, res) => {
     prisma.ticket.count({ where }),
   ]);
   res.json({ data: tickets, total, page: query.page, pageSize: query.pageSize });
+});
+
+ticketsRouter.get("/:id", async (req, res) => {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!session) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const params = parseBody(ticketIdParamSchema, req.params, res);
+  if (!params) return;
+
+  const ticket = await prisma.ticket.findUnique({ where: { id: params.id } });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+  res.json(ticket);
 });

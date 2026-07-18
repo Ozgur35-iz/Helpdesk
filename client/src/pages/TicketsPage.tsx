@@ -8,6 +8,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 type Ticket = {
   id: number;
@@ -55,6 +56,7 @@ const columns = [
 ];
 
 export function TicketsPage() {
+  const navigate = useNavigate();
   const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
   const sort = sorting[0] ?? DEFAULT_SORTING[0];
 
@@ -231,7 +233,11 @@ export function TicketsPage() {
                 </tr>
               ))
             : table.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
+                <tr
+                  key={row.id}
+                  className="clickable-row"
+                  onClick={() => navigate(`/tickets/${row.original.id}`)}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
                   ))}
