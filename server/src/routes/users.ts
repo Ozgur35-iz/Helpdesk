@@ -20,6 +20,21 @@ const updateUserSchema = z.object({
 
 export const usersRouter = Router();
 
+usersRouter.get("/agents", async (req, res) => {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!session) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const agents = await prisma.user.findMany({
+    where: { role: "agent", deletedAt: null },
+    select: { id: true, name: true, email: true },
+    orderBy: { name: "asc" },
+  });
+  res.json(agents);
+});
+
 usersRouter.get("/", async (req, res) => {
   const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
   if (!session) {

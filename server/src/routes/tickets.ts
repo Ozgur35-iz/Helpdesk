@@ -22,6 +22,7 @@ const ticketsQuerySchema = z.object({
 });
 
 const ticketIdParamSchema = z.object({ id: z.coerce.number().int().positive() });
+const assignTicketSchema = z.object({ assigneeId: z.string().min(1).nullable() });
 
 export const ticketsRouter = Router();
 
@@ -49,6 +50,7 @@ ticketsRouter.get("/", async (req, res) => {
   const [tickets, total] = await Promise.all([
     prisma.ticket.findMany({
       where,
+      include: { assignee: { select: { id: true, name: true, email: true } } },
       orderBy: { [query.sortBy]: query.sortOrder },
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
@@ -68,10 +70,48 @@ ticketsRouter.get("/:id", async (req, res) => {
   const params = parseBody(ticketIdParamSchema, req.params, res);
   if (!params) return;
 
-  const ticket = await prisma.ticket.findUnique({ where: { id: params.id } });
+  const ticket = await prisma.ticket.findUnique({
+    where: { id: params.id },
+    include: { assignee: { select: { id: true, name: true, email: true } } },
+  });
   if (!ticket) {
     res.status(404).json({ error: "Ticket not found" });
     return;
   }
   res.json(ticket);
+});
+
+ticketsRouter.patch("/:id/assign", async (req, res) => {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!session) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const params = parseBody(ticketIdParamSchema, req.params, res);
+  if (!params) return;
+
+  const data = parseBody(assignTicketSchema, req.body, res);
+  if (!data) return;
+
+  const ticket = await prisma.ticket.findUnique({ where: { id: params.id } });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  if (data.assigneeId) {
+    const assignee = await prisma.user.findUnique({ where: { id: data.assigneeId } });
+    if (!assignee || assignee.deletedAt) {
+      res.status(404).json({ error: "Assignee not found" });
+      return;
+    }
+  }
+
+  const updated = await prisma.ticket.update({
+    where: { id: params.id },
+    data: { assigneeId: data.assigneeId },
+    include: { assignee: { select: { id: true, name: true, email: true } } },
+  });
+  res.json(updated);
 });
