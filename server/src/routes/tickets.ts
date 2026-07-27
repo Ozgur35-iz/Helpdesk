@@ -23,6 +23,8 @@ const ticketsQuerySchema = z.object({
 
 const ticketIdParamSchema = z.object({ id: z.coerce.number().int().positive() });
 const assignTicketSchema = z.object({ assigneeId: z.string().min(1).nullable() });
+const updateStatusSchema = z.object({ status: z.enum(statusValues) });
+const updateCategorySchema = z.object({ category: z.enum(categoryValues).nullable() });
 
 export const ticketsRouter = Router();
 
@@ -111,6 +113,60 @@ ticketsRouter.patch("/:id/assign", async (req, res) => {
   const updated = await prisma.ticket.update({
     where: { id: params.id },
     data: { assigneeId: data.assigneeId },
+    include: { assignee: { select: { id: true, name: true, email: true } } },
+  });
+  res.json(updated);
+});
+
+ticketsRouter.patch("/:id/status", async (req, res) => {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!session) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const params = parseBody(ticketIdParamSchema, req.params, res);
+  if (!params) return;
+
+  const data = parseBody(updateStatusSchema, req.body, res);
+  if (!data) return;
+
+  const ticket = await prisma.ticket.findUnique({ where: { id: params.id } });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  const updated = await prisma.ticket.update({
+    where: { id: params.id },
+    data: { status: data.status },
+    include: { assignee: { select: { id: true, name: true, email: true } } },
+  });
+  res.json(updated);
+});
+
+ticketsRouter.patch("/:id/category", async (req, res) => {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!session) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const params = parseBody(ticketIdParamSchema, req.params, res);
+  if (!params) return;
+
+  const data = parseBody(updateCategorySchema, req.body, res);
+  if (!data) return;
+
+  const ticket = await prisma.ticket.findUnique({ where: { id: params.id } });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  const updated = await prisma.ticket.update({
+    where: { id: params.id },
+    data: { category: data.category },
     include: { assignee: { select: { id: true, name: true, email: true } } },
   });
   res.json(updated);

@@ -62,8 +62,8 @@ it("renders the fetched ticket's fields", async () => {
 
   expect(await screen.findByRole("heading", { name: "Billing question" })).toBeInTheDocument();
   expect(mockedGet).toHaveBeenCalledWith("/api/tickets/1");
-  expect(screen.getByText("open")).toBeInTheDocument();
-  expect(screen.getByText("billing")).toBeInTheDocument();
+  expect(screen.getByLabelText("Status")).toHaveValue("open");
+  expect(screen.getByLabelText("Category")).toHaveValue("billing");
   expect(screen.getByText("Ada Lovelace <ada@example.com>")).toBeInTheDocument();
   expect(screen.getByLabelText("Assignee")).toHaveValue("");
   expect(await screen.findByRole("option", { name: "Grace Hopper" })).toBeInTheDocument();
@@ -73,12 +73,13 @@ it("renders the fetched ticket's fields", async () => {
   expect(screen.getByText("← Back to tickets")).toBeInTheDocument();
 });
 
-it("shows the '—' placeholder when the ticket has no category", async () => {
+it("shows the 'None' option when the ticket has no category", async () => {
   mockTicketGet(() => Promise.resolve({ data: { ...ticket, category: null } }));
 
   renderTicketDetailPage();
 
-  expect(await screen.findByText("—")).toBeInTheDocument();
+  await screen.findByRole("heading", { name: "Billing question" });
+  expect(screen.getByLabelText("Category")).toHaveValue("");
 });
 
 it("shows the server-provided error message when the request fails with an axios error", async () => {
@@ -124,4 +125,71 @@ it("shows the assign error message when assignment fails", async () => {
   await editor.selectOptions(screen.getByLabelText("Assignee"), "agent-1");
 
   expect(await screen.findByText("Assignee not found")).toBeInTheDocument();
+});
+
+it("updates the ticket status", async () => {
+  mockTicketGet(() => Promise.resolve({ data: ticket }));
+  mockedPatch.mockResolvedValue({ data: { ...ticket, status: "resolved" } });
+  const editor = userEvent.setup();
+
+  renderTicketDetailPage();
+
+  await screen.findByRole("heading", { name: "Billing question" });
+  await editor.selectOptions(screen.getByLabelText("Status"), "resolved");
+
+  expect(mockedPatch).toHaveBeenCalledWith("/api/tickets/1/status", { status: "resolved" });
+});
+
+it("shows the status error message when the status update fails", async () => {
+  mockTicketGet(() => Promise.resolve({ data: ticket }));
+  mockedIsAxiosError.mockReturnValue(true);
+  mockedPatch.mockRejectedValue({ response: { data: { error: "Invalid status" } } });
+  const editor = userEvent.setup();
+
+  renderTicketDetailPage();
+
+  await screen.findByRole("heading", { name: "Billing question" });
+  await editor.selectOptions(screen.getByLabelText("Status"), "resolved");
+
+  expect(await screen.findByText("Invalid status")).toBeInTheDocument();
+});
+
+it("updates the ticket category", async () => {
+  mockTicketGet(() => Promise.resolve({ data: ticket }));
+  mockedPatch.mockResolvedValue({ data: { ...ticket, category: "refund" } });
+  const editor = userEvent.setup();
+
+  renderTicketDetailPage();
+
+  await screen.findByRole("heading", { name: "Billing question" });
+  await editor.selectOptions(screen.getByLabelText("Category"), "refund");
+
+  expect(mockedPatch).toHaveBeenCalledWith("/api/tickets/1/category", { category: "refund" });
+});
+
+it("clears the ticket category when 'None' is selected", async () => {
+  mockTicketGet(() => Promise.resolve({ data: ticket }));
+  mockedPatch.mockResolvedValue({ data: { ...ticket, category: null } });
+  const editor = userEvent.setup();
+
+  renderTicketDetailPage();
+
+  await screen.findByRole("heading", { name: "Billing question" });
+  await editor.selectOptions(screen.getByLabelText("Category"), "None");
+
+  expect(mockedPatch).toHaveBeenCalledWith("/api/tickets/1/category", { category: null });
+});
+
+it("shows the category error message when the category update fails", async () => {
+  mockTicketGet(() => Promise.resolve({ data: ticket }));
+  mockedIsAxiosError.mockReturnValue(true);
+  mockedPatch.mockRejectedValue({ response: { data: { error: "Invalid category" } } });
+  const editor = userEvent.setup();
+
+  renderTicketDetailPage();
+
+  await screen.findByRole("heading", { name: "Billing question" });
+  await editor.selectOptions(screen.getByLabelText("Category"), "refund");
+
+  expect(await screen.findByText("Invalid category")).toBeInTheDocument();
 });
