@@ -2,6 +2,10 @@ import { useState } from "react";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Field } from "@ark-ui/react/field";
 
 type Agent = {
   id: string;
@@ -22,6 +26,22 @@ type TicketDetail = {
   updatedAt: string;
 };
 
+type ReplyAuthor = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+type TicketReply = {
+  id: number;
+  body: string;
+  author: ReplyAuthor;
+  createdAt: string;
+};
+
+const replySchema = z.object({ body: z.string().trim().min(1, "Reply cannot be empty") });
+type ReplyFormValues = z.infer<typeof replySchema>;
+
 const statusValues = ["open", "pending", "resolved", "closed"] as const;
 const categoryValues = ["billing", "technical", "account", "refund"] as const;
 
@@ -35,6 +55,7 @@ export function TicketDetailPage() {
   const [assignError, setAssignError] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [replyError, setReplyError] = useState<string | null>(null);
 
   const {
     data: ticket,
@@ -49,6 +70,18 @@ export function TicketDetailPage() {
     queryKey: ["users", "agents"],
     queryFn: async () => (await axios.get<Agent[]>("/api/users/agents")).data,
   });
+
+  const { data: replies = [] } = useQuery({
+    queryKey: ["ticket", id, "replies"],
+    queryFn: async () => (await axios.get<TicketReply[]>(`/api/tickets/${id}/replies`)).data,
+  });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors: replyErrors, isSubmitting: isSubmittingReply },
+  } = useForm<ReplyFormValues>({ resolver: zodResolver(replySchema) });
 
   const assignMutation = useMutation({
     mutationFn: (assigneeId: string | null) =>
@@ -90,6 +123,22 @@ export function TicketDetailPage() {
       );
     },
   });
+
+  const replyMutation = useMutation({
+    mutationFn: (body: string) => axios.post<TicketReply>(`/api/tickets/${id}/replies`, { body }),
+    onSuccess: () => {
+      setReplyError(null);
+      reset();
+      queryClient.invalidateQueries({ queryKey: ["ticket", id, "replies"] });
+    },
+    onError: (err) => {
+      setReplyError(
+        axios.isAxiosError(err) ? (err.response?.data?.error ?? "Failed to post reply") : err.message,
+      );
+    },
+  });
+
+  const onSubmitReply = (values: ReplyFormValues) => replyMutation.mutateAsync(values.body).catch(() => {});
 
   if (error)
     return (
@@ -186,6 +235,34 @@ export function TicketDetailPage() {
         </dl>
       </div>
       <p className="ticket-detail-body">{ticket.body}</p>
+      <section className="ticket-replies">
+        <h2>Replies</h2>
+        <ul className="ticket-replies-list">
+          {replies.map((reply) => (
+            <li key={reply.id} className="ticket-reply">
+              <p className="ticket-reply-meta">
+                {reply.author.name} &middot; {new Date(reply.createdAt).toLocaleString()}
+              </p>
+              <p className="ticket-reply-body">{reply.body}</p>
+            </li>
+          ))}
+        </ul>
+        <form onSubmit={handleSubmit(onSubmitReply)} noValidate className="ticket-reply-form">
+          <Field.Root className="ticket-reply-field" invalid={Boolean(replyErrors.body)}>
+            <Field.Label>Add a reply</Field.Label>
+            <Field.Textarea rows={4} {...register("body")} />
+            {replyErrors.body && <Field.ErrorText>{replyErrors.body.message}</Field.ErrorText>}
+          </Field.Root>
+          {replyError && (
+            <p className="auth-error" role="alert">
+              {replyError}
+            </p>
+          )}
+          <button type="submit" disabled={isSubmittingReply}>
+            {isSubmittingReply ? "Posting..." : "Post reply"}
+          </button>
+        </form>
+      </section>
     </div>
   );
 }

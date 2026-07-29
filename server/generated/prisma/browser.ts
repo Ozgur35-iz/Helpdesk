@@ -42,3 +42,8 @@ export type Verification = Prisma.VerificationModel
  * 
  */
 export type Ticket = Prisma.TicketModel
+/**
+ * Model TicketReply
+ * 
+ */
+export type TicketReply = Prisma.TicketReplyModel

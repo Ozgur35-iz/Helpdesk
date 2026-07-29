@@ -8,12 +8,14 @@ vi.mock("axios", () => ({
   default: {
     get: vi.fn(),
     patch: vi.fn(),
+    post: vi.fn(),
     isAxiosError: vi.fn(),
   },
 }));
 
 const mockedGet = vi.mocked(axios.get);
 const mockedPatch = vi.mocked(axios.patch);
+const mockedPost = vi.mocked(axios.post);
 const mockedIsAxiosError = vi.mocked(axios.isAxiosError);
 
 function renderTicketDetailPage() {
@@ -35,15 +37,27 @@ const ticket = {
 
 const agents = [{ id: "agent-1", name: "Grace Hopper", email: "grace@example.com" }];
 
+const replies = [
+  {
+    id: 1,
+    body: "Thanks for reaching out, looking into this now.",
+    author: { id: "agent-1", name: "Grace Hopper", email: "grace@example.com" },
+    createdAt: "2024-03-15T10:00:00.000Z",
+  },
+];
+
 function mockTicketGet(handler: (url: string) => Promise<{ data: unknown }>) {
-  mockedGet.mockImplementation((url: string) =>
-    url === "/api/users/agents" ? Promise.resolve({ data: agents }) : handler(url),
-  );
+  mockedGet.mockImplementation((url: string) => {
+    if (url === "/api/users/agents") return Promise.resolve({ data: agents });
+    if (url === "/api/tickets/1/replies") return Promise.resolve({ data: [] });
+    return handler(url);
+  });
 }
 
 beforeEach(() => {
   mockedGet.mockReset();
   mockedPatch.mockReset();
+  mockedPost.mockReset();
   mockedIsAxiosError.mockReset();
 });
 
@@ -178,6 +192,65 @@ it("clears the ticket category when 'None' is selected", async () => {
   await editor.selectOptions(screen.getByLabelText("Category"), "None");
 
   expect(mockedPatch).toHaveBeenCalledWith("/api/tickets/1/category", { category: null });
+});
+
+it("renders the list of existing replies", async () => {
+  mockedGet.mockImplementation((url: string) => {
+    if (url === "/api/users/agents") return Promise.resolve({ data: agents });
+    if (url === "/api/tickets/1/replies") return Promise.resolve({ data: replies });
+    return Promise.resolve({ data: ticket });
+  });
+
+  renderTicketDetailPage();
+
+  await screen.findByRole("heading", { name: "Billing question" });
+  expect(await screen.findByText(replies[0].body)).toBeInTheDocument();
+  expect(screen.getByText(/Grace Hopper/, { selector: ".ticket-reply-meta" })).toBeInTheDocument();
+});
+
+it("submits a new reply", async () => {
+  mockTicketGet(() => Promise.resolve({ data: ticket }));
+  mockedPost.mockResolvedValue({ data: { ...replies[0], id: 2 } });
+  const editor = userEvent.setup();
+
+  renderTicketDetailPage();
+
+  await screen.findByRole("heading", { name: "Billing question" });
+  await editor.type(screen.getByLabelText("Add a reply"), "On it, will update shortly.");
+  await editor.click(screen.getByRole("button", { name: "Post reply" }));
+
+  expect(mockedPost).toHaveBeenCalledWith("/api/tickets/1/replies", {
+    body: "On it, will update shortly.",
+  });
+  expect(await screen.findByLabelText("Add a reply")).toHaveValue("");
+});
+
+it("shows a validation error when submitting an empty reply", async () => {
+  mockTicketGet(() => Promise.resolve({ data: ticket }));
+  const editor = userEvent.setup();
+
+  renderTicketDetailPage();
+
+  await screen.findByRole("heading", { name: "Billing question" });
+  await editor.click(screen.getByRole("button", { name: "Post reply" }));
+
+  expect(await screen.findByText("Reply cannot be empty")).toBeInTheDocument();
+  expect(mockedPost).not.toHaveBeenCalled();
+});
+
+it("shows the reply error message when posting fails", async () => {
+  mockTicketGet(() => Promise.resolve({ data: ticket }));
+  mockedIsAxiosError.mockReturnValue(true);
+  mockedPost.mockRejectedValue({ response: { data: { error: "Failed to post reply" } } });
+  const editor = userEvent.setup();
+
+  renderTicketDetailPage();
+
+  await screen.findByRole("heading", { name: "Billing question" });
+  await editor.type(screen.getByLabelText("Add a reply"), "On it, will update shortly.");
+  await editor.click(screen.getByRole("button", { name: "Post reply" }));
+
+  expect(await screen.findByText("Failed to post reply")).toBeInTheDocument();
 });
 
 it("shows the category error message when the category update fails", async () => {

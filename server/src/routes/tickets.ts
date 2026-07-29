@@ -25,6 +25,7 @@ const ticketIdParamSchema = z.object({ id: z.coerce.number().int().positive() })
 const assignTicketSchema = z.object({ assigneeId: z.string().min(1).nullable() });
 const updateStatusSchema = z.object({ status: z.enum(statusValues) });
 const updateCategorySchema = z.object({ category: z.enum(categoryValues).nullable() });
+const createReplySchema = z.object({ body: z.string().trim().min(1, "Reply cannot be empty") });
 
 export const ticketsRouter = Router();
 
@@ -170,4 +171,54 @@ ticketsRouter.patch("/:id/category", async (req, res) => {
     include: { assignee: { select: { id: true, name: true, email: true } } },
   });
   res.json(updated);
+});
+
+ticketsRouter.get("/:id/replies", async (req, res) => {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!session) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const params = parseBody(ticketIdParamSchema, req.params, res);
+  if (!params) return;
+
+  const ticket = await prisma.ticket.findUnique({ where: { id: params.id } });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  const replies = await prisma.ticketReply.findMany({
+    where: { ticketId: params.id },
+    include: { author: { select: { id: true, name: true, email: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+  res.json(replies);
+});
+
+ticketsRouter.post("/:id/replies", async (req, res) => {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!session) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const params = parseBody(ticketIdParamSchema, req.params, res);
+  if (!params) return;
+
+  const data = parseBody(createReplySchema, req.body, res);
+  if (!data) return;
+
+  const ticket = await prisma.ticket.findUnique({ where: { id: params.id } });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  const reply = await prisma.ticketReply.create({
+    data: { body: data.body, ticketId: params.id, authorId: session.user.id },
+    include: { author: { select: { id: true, name: true, email: true } } },
+  });
+  res.status(201).json(reply);
 });
