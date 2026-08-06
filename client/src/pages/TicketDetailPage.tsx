@@ -56,6 +56,7 @@ export function TicketDetailPage() {
   const [statusError, setStatusError] = useState<string | null>(null);
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const [replyError, setReplyError] = useState<string | null>(null);
+  const [polishError, setPolishError] = useState<string | null>(null);
 
   const {
     data: ticket,
@@ -80,6 +81,8 @@ export function TicketDetailPage() {
     register,
     handleSubmit,
     reset,
+    getValues,
+    setValue,
     formState: { errors: replyErrors, isSubmitting: isSubmittingReply },
   } = useForm<ReplyFormValues>({ resolver: zodResolver(replySchema) });
 
@@ -138,7 +141,29 @@ export function TicketDetailPage() {
     },
   });
 
+  const polishMutation = useMutation({
+    mutationFn: (body: string) =>
+      axios.post<{ text: string }>(`/api/tickets/${id}/polish-reply`, { body }),
+    onSuccess: (res) => {
+      setPolishError(null);
+      setValue("body", res.data.text, { shouldValidate: true, shouldDirty: true });
+    },
+    onError: (err) => {
+      setPolishError(
+        axios.isAxiosError(err) ? (err.response?.data?.error ?? "Failed to polish reply") : err.message,
+      );
+    },
+  });
+
   const onSubmitReply = (values: ReplyFormValues) => replyMutation.mutateAsync(values.body).catch(() => {});
+  const onPolishReply = () => {
+    const body = getValues("body")?.trim();
+    if (!body) {
+      setPolishError("Write a reply before polishing it");
+      return;
+    }
+    polishMutation.mutate(body);
+  };
 
   if (error)
     return (
@@ -253,11 +278,19 @@ export function TicketDetailPage() {
             <Field.Textarea rows={4} {...register("body")} />
             {replyErrors.body && <Field.ErrorText>{replyErrors.body.message}</Field.ErrorText>}
           </Field.Root>
+          {polishError && (
+            <p className="auth-error" role="alert">
+              {polishError}
+            </p>
+          )}
           {replyError && (
             <p className="auth-error" role="alert">
               {replyError}
             </p>
           )}
+          <button type="button" onClick={onPolishReply} disabled={polishMutation.isPending}>
+            {polishMutation.isPending ? "Polishing..." : "Polish"}
+          </button>
           <button type="submit" disabled={isSubmittingReply}>
             {isSubmittingReply ? "Posting..." : "Post reply"}
           </button>

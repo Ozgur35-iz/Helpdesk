@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { fromNodeHeaders } from "better-auth/node";
+import { generateText } from "ai";
+import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { Prisma } from "../../generated/prisma/client";
 import { auth } from "../auth";
@@ -26,6 +28,7 @@ const assignTicketSchema = z.object({ assigneeId: z.string().min(1).nullable() }
 const updateStatusSchema = z.object({ status: z.enum(statusValues) });
 const updateCategorySchema = z.object({ category: z.enum(categoryValues).nullable() });
 const createReplySchema = z.object({ body: z.string().trim().min(1, "Reply cannot be empty") });
+const polishReplySchema = z.object({ body: z.string().trim().min(1, "Reply cannot be empty") });
 
 export const ticketsRouter = Router();
 
@@ -195,6 +198,44 @@ ticketsRouter.get("/:id/replies", async (req, res) => {
     orderBy: { createdAt: "asc" },
   });
   res.json(replies);
+});
+
+ticketsRouter.post("/:id/polish-reply", async (req, res) => {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!session) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const params = parseBody(ticketIdParamSchema, req.params, res);
+  if (!params) return;
+
+  const data = parseBody(polishReplySchema, req.body, res);
+  if (!data) return;
+
+  const ticket = await prisma.ticket.findUnique({ where: { id: params.id } });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  try {
+    const { text } = await generateText({
+      model: google("gemini-flash-latest"),
+      prompt:
+        "You are helping a support agent polish a reply to a customer ticket. " +
+        "Rewrite the draft below to be clear, professional, and courteous while preserving its " +
+        "meaning and any specific facts (names, dates, amounts, links). Keep it about the same " +
+        "length. Do not add a greeting or sign-off — those are added separately. Respond with " +
+        "only the rewritten reply body text, no preamble or quotes.\n\n" +
+        `Ticket subject: ${ticket.subject}\n\nDraft reply:\n${data.body}`,
+    });
+    const polished = `Hi ${ticket.senderName},\n\n${text.trim()}\n\nRegards,\n${session.user.name}`;
+    res.json({ text: polished });
+  } catch (err) {
+    console.error("polish-reply failed:", err);
+    res.status(502).json({ error: "Failed to polish reply" });
+  }
 });
 
 ticketsRouter.post("/:id/replies", async (req, res) => {
