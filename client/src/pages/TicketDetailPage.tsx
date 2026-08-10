@@ -49,6 +49,21 @@ function titleCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
+function SparklesIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="currentColor"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M11 2l1.6 4.9L17.5 8.5l-4.9 1.6L11 15l-1.6-4.9L4.5 8.5l4.9-1.6L11 2zM18.5 13l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9.9-2.6z" />
+    </svg>
+  );
+}
+
 export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
@@ -57,6 +72,8 @@ export function TicketDetailPage() {
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const [replyError, setReplyError] = useState<string | null>(null);
   const [polishError, setPolishError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summarizeError, setSummarizeError] = useState<string | null>(null);
 
   const {
     data: ticket,
@@ -155,6 +172,19 @@ export function TicketDetailPage() {
     },
   });
 
+  const summarizeMutation = useMutation({
+    mutationFn: () => axios.post<{ text: string }>(`/api/tickets/${id}/summarize`),
+    onSuccess: (res) => {
+      setSummarizeError(null);
+      setSummary(res.data.text);
+    },
+    onError: (err) => {
+      setSummarizeError(
+        axios.isAxiosError(err) ? (err.response?.data?.error ?? "Failed to summarize ticket") : err.message,
+      );
+    },
+  });
+
   const onSubmitReply = (values: ReplyFormValues) => replyMutation.mutateAsync(values.body).catch(() => {});
   const onPolishReply = () => {
     const body = getValues("body")?.trim();
@@ -182,7 +212,31 @@ export function TicketDetailPage() {
   return (
     <div className="ticket-detail-page">
       <Link to="/tickets">&larr; Back to tickets</Link>
-      <h1>{ticket.subject}</h1>
+      <div className="ticket-detail-header">
+        <h1>{ticket.subject}</h1>
+        <button
+          type="button"
+          className="summarize-button"
+          onClick={() => summarizeMutation.mutate()}
+          disabled={summarizeMutation.isPending}
+        >
+          <SparklesIcon />
+          {summarizeMutation.isPending ? "Summarizing..." : "Summarize"}
+        </button>
+      </div>
+      {summarizeError && (
+        <p className="auth-error" role="alert">
+          {summarizeError}
+        </p>
+      )}
+      {summary && (
+        <div className="ticket-summary">
+          <h2>
+            <SparklesIcon /> Summary
+          </h2>
+          <p>{summary}</p>
+        </div>
+      )}
       <div className="ticket-detail-columns">
         <dl className="ticket-detail-fields">
           <dt>Requester</dt>

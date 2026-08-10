@@ -253,6 +253,55 @@ it("shows the reply error message when posting fails", async () => {
   expect(await screen.findByText("Failed to post reply")).toBeInTheDocument();
 });
 
+it("summarizes the ticket and displays the result", async () => {
+  mockTicketGet(() => Promise.resolve({ data: ticket }));
+  mockedPost.mockResolvedValue({ data: { text: "Customer was double-charged; refund is in progress." } });
+  const editor = userEvent.setup();
+
+  renderTicketDetailPage();
+
+  await screen.findByRole("heading", { name: "Billing question" });
+  await editor.click(screen.getByRole("button", { name: /Summarize/ }));
+
+  expect(mockedPost).toHaveBeenCalledWith("/api/tickets/1/summarize");
+  expect(await screen.findByText("Customer was double-charged; refund is in progress.")).toBeInTheDocument();
+});
+
+it("allows summarizing the ticket more than once", async () => {
+  mockTicketGet(() => Promise.resolve({ data: ticket }));
+  mockedPost
+    .mockResolvedValueOnce({ data: { text: "First summary." } })
+    .mockResolvedValueOnce({ data: { text: "Second summary." } });
+  const editor = userEvent.setup();
+
+  renderTicketDetailPage();
+
+  await screen.findByRole("heading", { name: "Billing question" });
+  const summarizeButton = screen.getByRole("button", { name: /Summarize/ });
+
+  await editor.click(summarizeButton);
+  expect(await screen.findByText("First summary.")).toBeInTheDocument();
+
+  await editor.click(summarizeButton);
+  expect(await screen.findByText("Second summary.")).toBeInTheDocument();
+  expect(screen.queryByText("First summary.")).not.toBeInTheDocument();
+  expect(mockedPost).toHaveBeenCalledTimes(2);
+});
+
+it("shows the summarize error message when summarizing fails", async () => {
+  mockTicketGet(() => Promise.resolve({ data: ticket }));
+  mockedIsAxiosError.mockReturnValue(true);
+  mockedPost.mockRejectedValue({ response: { data: { error: "Failed to summarize ticket" } } });
+  const editor = userEvent.setup();
+
+  renderTicketDetailPage();
+
+  await screen.findByRole("heading", { name: "Billing question" });
+  await editor.click(screen.getByRole("button", { name: /Summarize/ }));
+
+  expect(await screen.findByText("Failed to summarize ticket")).toBeInTheDocument();
+});
+
 it("shows the category error message when the category update fails", async () => {
   mockTicketGet(() => Promise.resolve({ data: ticket }));
   mockedIsAxiosError.mockReturnValue(true);

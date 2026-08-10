@@ -100,6 +100,47 @@ main {
   gap: 1rem;
 }
 
+.ticket-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.ticket-detail-header h1 {
+  margin: 0;
+}
+
+.summarize-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ticket-summary {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  background: #f8f7ff;
+}
+
+.ticket-summary h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.ticket-summary p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
 .ticket-detail-columns {
   display: flex;
   gap: 2rem;

@@ -200,6 +200,49 @@ ticketsRouter.get("/:id/replies", async (req, res) => {
   res.json(replies);
 });
 
+ticketsRouter.post("/:id/summarize", async (req, res) => {
+  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+  if (!session) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const params = parseBody(ticketIdParamSchema, req.params, res);
+  if (!params) return;
+
+  const ticket = await prisma.ticket.findUnique({ where: { id: params.id } });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  const replies = await prisma.ticketReply.findMany({
+    where: { ticketId: params.id },
+    include: { author: { select: { name: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const conversation = [
+    `Original message from ${ticket.senderName}:\n${ticket.body}`,
+    ...replies.map((reply) => `Reply from ${reply.author.name}:\n${reply.body}`),
+  ].join("\n\n");
+
+  try {
+    const { text } = await generateText({
+      model: google("gemini-flash-latest"),
+      prompt:
+        "Summarize the support ticket conversation below for an agent who needs to get up to speed quickly. " +
+        "Cover the customer's issue, what has been done so far, and the current state. Keep it to 2-4 sentences. " +
+        "Respond with only the summary text, no preamble or headings.\n\n" +
+        `Ticket subject: ${ticket.subject}\n\n${conversation}`,
+    });
+    res.json({ text: text.trim() });
+  } catch (err) {
+    console.error("summarize failed:", err);
+    res.status(502).json({ error: "Failed to summarize ticket" });
+  }
+});
+
 ticketsRouter.post("/:id/polish-reply", async (req, res) => {
   const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
   if (!session) {
