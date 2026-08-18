@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db";
 import { parseBody } from "../lib/validate";
+import { classifyTicketInBackground } from "../lib/classify";
 
 const inboundEmailSchema = z.object({
   from: z.email("Enter a valid email"),
@@ -35,6 +36,8 @@ webhooksRouter.post("/inbound-email", async (req, res) => {
   const ticket = await prisma.ticket.create({
     data: { subject, body, requesterEmail: from, senderName, externalMessageId: messageId },
   });
+
+  classifyTicketInBackground(ticket);
 
   res.status(201).json({ id: ticket.id });
 });

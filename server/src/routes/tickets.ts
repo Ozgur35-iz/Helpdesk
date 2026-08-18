@@ -7,10 +7,10 @@ import { Prisma } from "../../generated/prisma/client";
 import { auth } from "../auth";
 import { prisma } from "../db";
 import { parseBody } from "../lib/validate";
+import { categoryValues } from "../lib/categories";
 
 const sortableFields = ["subject", "status", "category", "createdAt"] as const;
 const statusValues = ["open", "pending", "resolved", "closed"] as const;
-const categoryValues = ["billing", "technical", "account", "refund"] as const;
 
 const ticketsQuerySchema = z.object({
   sortBy: z.enum(sortableFields).default("createdAt"),
