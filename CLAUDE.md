@@ -6,6 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A support-ticket management system (see `project-scope.md` for the full problem/feature spec): agents currently triage support emails by hand; the goal is a system that auto-classifies, summarizes, and suggests replies for tickets using AI, with an admin/agent role split. Auth, user management, and ticket CRUD/workflow are implemented; AI features and outbound email are not — see "Stack reality vs. planning docs" below.
 
+## Fix log
+
+Whenever you fix a bug or error (a button not working, a broken test, a crash, etc.) — as opposed to adding a new feature or doing a refactor — append an entry to `fix-log.md` at the repo root right after the fix is verified working. Newest entry on top (add it directly under the `# Fix Log` heading, above other entries). Use this format:
+
+```
+## YYYY-MM-DD — Short problem title
+
+**Problem:** What was broken and how it showed up (error message, symptom, repro steps).
+
+**Solution:** What was changed to fix it and why. Include file paths.
+
+**Files:** path/one.ts, path/two.tsx
+```
+
+Keep entries short and concrete — this file is read by the user afterward to commit the fix to their own memory, not as documentation for the codebase. Don't log feature work, refactors, or exploratory changes here, only actual bug/error fixes.
+
 ## Commands
 
 This is a Bun workspace monorepo with two packages: `client` (Vite/React) and `server` (Express/Bun).
