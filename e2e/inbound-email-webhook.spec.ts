@@ -83,6 +83,47 @@ test.describe("Inbound email webhook (POST /api/webhooks/inbound-email)", () => 
     expect(json).toHaveProperty("error");
   });
 
+  test("rejects a correctly-authenticated request with a malformed from address", async () => {
+    const payload = { ...uniqueEmailPayload(), from: "not-an-email" };
+
+    const res = await api.post(WEBHOOK_PATH, {
+      headers: { "x-webhook-secret": VALID_SECRET },
+      data: payload,
+    });
+
+    expect(res.status()).toBe(400);
+    const json = await res.json();
+    expect(json).toHaveProperty("error");
+    expect(typeof json.error).toBe("string");
+  });
+
+  test("rejects a correctly-authenticated request missing the body field", async () => {
+    const payload = uniqueEmailPayload();
+    const { body: _body, ...incompletePayload } = payload;
+
+    const res = await api.post(WEBHOOK_PATH, {
+      headers: { "x-webhook-secret": VALID_SECRET },
+      data: incompletePayload,
+    });
+
+    expect(res.status()).toBe(400);
+    const json = await res.json();
+    expect(json).toHaveProperty("error");
+  });
+
+  test("rejects a correctly-authenticated request with an empty-string subject", async () => {
+    const payload = { ...uniqueEmailPayload(), subject: "" };
+
+    const res = await api.post(WEBHOOK_PATH, {
+      headers: { "x-webhook-secret": VALID_SECRET },
+      data: payload,
+    });
+
+    expect(res.status()).toBe(400);
+    const json = await res.json();
+    expect(json).toHaveProperty("error");
+  });
+
   test("creates a ticket for a valid, correctly-authenticated request", async () => {
     const payload = uniqueEmailPayload();
 

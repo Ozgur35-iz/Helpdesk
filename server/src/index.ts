@@ -5,6 +5,7 @@ import { prisma } from "./db";
 import { usersRouter } from "./routes/users";
 import { webhooksRouter } from "./routes/webhooks";
 import { ticketsRouter } from "./routes/tickets";
+import { startQueue } from "./queue";
 
 const app = express();
 const port = process.env.PORT ?? 3001;
@@ -25,6 +26,10 @@ app.get("/api/health", async (_req, res) => {
 app.use("/api/users", usersRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/tickets", ticketsRouter);
+
+startQueue().catch((err) => {
+  console.error("failed to start job queue; ticket classification disabled:", err);
+});
 
 app.listen(port, () => {
   console.log(`Server listening on http://localhost:${port}`);

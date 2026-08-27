@@ -8,6 +8,9 @@ function isCategory(value: string): value is Category {
   return (categoryValues as readonly string[]).includes(value);
 }
 
+// Throws on an API/transport failure so the pg-boss worker retries the job. A
+// well-formed but unrecognized model response is treated as terminal (logged,
+// no throw) — a retry won't turn an unusable answer into a valid category.
 async function classifyTicket(ticket: Ticket) {
   const { text } = await generateText({
     model: google("gemini-flash-latest"),
@@ -26,9 +29,14 @@ async function classifyTicket(ticket: Ticket) {
   await prisma.ticket.update({ where: { id: ticket.id }, data: { category } });
 }
 
-// Fire-and-forget: callers don't await this, so ticket creation never blocks on Gemini.
-export function classifyTicketInBackground(ticket: Ticket) {
-  classifyTicket(ticket).catch((err) => {
-    console.error(`classify failed for ticket ${ticket.id}:`, err);
-  });
+// Entry point for the ticket-classification queue worker (server/src/queue.ts).
+// Re-fetches the ticket so the job payload can stay a bare id and the worker
+// always classifies the current row.
+export async function classifyTicketById(ticketId: number) {
+  const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+  if (!ticket) {
+    console.error(`classify: ticket ${ticketId} not found, skipping`);
+    return;
+  }
+  await classifyTicket(ticket);
 }
