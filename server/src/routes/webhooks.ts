@@ -2,7 +2,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db";
 import { parseBody } from "../lib/validate";
-import { boss, TICKET_CLASSIFICATION_QUEUE } from "../queue";
+import { enqueueClassification } from "../queue/classification";
+import { enqueueAutoResolve } from "../queue/auto-resolve";
 
 const inboundEmailSchema = z.object({
   from: z.email("Enter a valid email"),
@@ -37,13 +38,14 @@ webhooksRouter.post("/inbound-email", async (req, res) => {
     data: { subject, body, requesterEmail: from, senderName, externalMessageId: messageId },
   });
 
-  // Enqueue classification instead of running it inline; the webhook response
-  // must never block on (or fail over) Gemini. A queue hiccup just leaves the
-  // ticket at category: null for an agent to set manually.
+  // Enqueue the AI jobs instead of running them inline; the webhook response must
+  // never block on (or fail over) Gemini. A queue hiccup just leaves the ticket
+  // at category: null / status: "new" for an agent to pick up manually.
   try {
-    await boss.send(TICKET_CLASSIFICATION_QUEUE, { ticketId: ticket.id });
+    await enqueueClassification(ticket.id);
+    await enqueueAutoResolve(ticket.id);
   } catch (err) {
-    console.error(`failed to enqueue classification for ticket ${ticket.id}:`, err);
+    console.error(`failed to enqueue AI jobs for ticket ${ticket.id}:`, err);
   }
 
   res.status(201).json({ id: ticket.id });

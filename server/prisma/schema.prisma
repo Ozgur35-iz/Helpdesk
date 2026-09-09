@@ -81,8 +81,12 @@ model Ticket {
   body              String
   requesterEmail    String
   senderName        String
-  status            String   @default("open")
+  // Lifecycle: new -> processing (AI KB auto-resolver running) -> resolved | open.
+  // "new" and "processing" are hidden from the ticket list (server/src/routes/tickets.ts).
+  status            String   @default("new")
   category          String?
+  // KB-grounded answer draft, written when the AI auto-resolves the ticket.
+  aiResolutionReply String?
   externalMessageId String?  @unique
   assigneeId        String?
   assignee          User?    @relation(fields: [assigneeId], references: [id])

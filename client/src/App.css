@@ -141,6 +141,16 @@ main {
   white-space: pre-wrap;
 }
 
+.ticket-ai-resolution {
+  background: #f2fbf5;
+  border-color: #cfe9d8;
+}
+
+.ticket-status-pipeline {
+  font-style: italic;
+  color: #666;
+}
+
 .ticket-detail-columns {
   display: flex;
   gap: 2rem;

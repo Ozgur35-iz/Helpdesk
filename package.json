@@ -4,15 +4,17 @@
   "private": true,
   "workspaces": ["client", "server"],
   "scripts": {
-    "dev": "bun --filter '*' dev",
+    "dev": "concurrently -k -n client,server,worker -c cyan,green,magenta \"bun --filter client dev\" \"bun --filter server dev\" \"bun --filter server worker\"",
     "dev:server": "bun --filter server dev",
     "dev:client": "bun --filter client dev",
+    "dev:worker": "bun --filter server worker",
     "test:e2e:setup": "cd server && bun run db:test:setup",
     "test:e2e": "bun run test:e2e:setup && playwright test",
     "test:e2e:ui": "bun run test:e2e:setup && playwright test --ui"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
-    "@types/node": "^24.13.2"
+    "@types/node": "^24.13.2",
+    "concurrently": "^10.0.5"
   }
 }

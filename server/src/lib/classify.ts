@@ -1,7 +1,7 @@
 import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
 import { prisma } from "../db";
 import type { Ticket } from "../../generated/prisma/client";
+import { geminiModel, aiMaxRetries } from "./ai";
 import { categoryValues, type Category } from "./categories";
 
 function isCategory(value: string): value is Category {
@@ -13,7 +13,9 @@ function isCategory(value: string): value is Category {
 // no throw) — a retry won't turn an unusable answer into a valid category.
 async function classifyTicket(ticket: Ticket) {
   const { text } = await generateText({
-    model: google("gemini-flash-latest"),
+    model: geminiModel,
+    // pg-boss owns the real retry/backoff for this job; keep the SDK's short.
+    maxRetries: aiMaxRetries,
     prompt:
       `Classify the support ticket below into exactly one of these categories: ${categoryValues.join(", ")}. ` +
       "Respond with only the category name in lowercase, no punctuation or explanation.\n\n" +
@@ -29,7 +31,7 @@ async function classifyTicket(ticket: Ticket) {
   await prisma.ticket.update({ where: { id: ticket.id }, data: { category } });
 }
 
-// Entry point for the ticket-classification queue worker (server/src/queue.ts).
+// Entry point for the ticket-classification queue worker (server/src/queue/classification.ts).
 // Re-fetches the ticket so the job payload can stay a bare id and the worker
 // always classifies the current row.
 export async function classifyTicketById(ticketId: number) {

@@ -1,21 +1,26 @@
 import { Router } from "express";
 import { fromNodeHeaders } from "better-auth/node";
 import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { Prisma } from "../../generated/prisma/client";
 import { auth } from "../auth";
 import { prisma } from "../db";
+import { geminiModel, aiMaxRetries } from "../lib/ai";
 import { parseBody } from "../lib/validate";
 import { categoryValues } from "../lib/categories";
 
 const sortableFields = ["subject", "status", "category", "createdAt"] as const;
-const statusValues = ["open", "pending", "resolved", "closed"] as const;
+// A ticket row can also hold the AI-pipeline statuses "new" and "processing"
+// (see server/prisma/schema.prisma). Those are hidden from the list (see the
+// GET "/" handler) and can't be set or filtered by an agent.
+const agentStatusValues = ["open", "pending", "resolved", "closed"] as const;
+// Hidden from the ticket list while the AI KB auto-resolver is working on them.
+const hiddenListStatuses = ["new", "processing"];
 
 const ticketsQuerySchema = z.object({
   sortBy: z.enum(sortableFields).default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
-  status: z.enum(statusValues).optional(),
+  status: z.enum(agentStatusValues).optional(),
   category: z.enum([...categoryValues, "none"]).optional(),
   subject: z.string().trim().min(1).optional(),
   requester: z.string().trim().min(1).optional(),
@@ -25,7 +30,7 @@ const ticketsQuerySchema = z.object({
 
 const ticketIdParamSchema = z.object({ id: z.coerce.number().int().positive() });
 const assignTicketSchema = z.object({ assigneeId: z.string().min(1).nullable() });
-const updateStatusSchema = z.object({ status: z.enum(statusValues) });
+const updateStatusSchema = z.object({ status: z.enum(agentStatusValues) });
 const updateCategorySchema = z.object({ category: z.enum(categoryValues).nullable() });
 const createReplySchema = z.object({ body: z.string().trim().min(1, "Reply cannot be empty") });
 const polishReplySchema = z.object({ body: z.string().trim().min(1, "Reply cannot be empty") });
@@ -43,7 +48,10 @@ ticketsRouter.get("/", async (req, res) => {
   if (!query) return;
 
   const where: Prisma.TicketWhereInput = {};
-  if (query.status) where.status = query.status;
+  // Tickets still in the AI KB auto-resolve pipeline ("new"/"processing") are
+  // hidden until they land on a real status. A specific status filter is always
+  // one of the agent statuses, so it already excludes them.
+  where.status = query.status ?? { notIn: hiddenListStatuses };
   if (query.category) where.category = query.category === "none" ? null : query.category;
   if (query.subject) where.subject = { contains: query.subject, mode: "insensitive" };
   if (query.requester) {
@@ -229,7 +237,8 @@ ticketsRouter.post("/:id/summarize", async (req, res) => {
 
   try {
     const { text } = await generateText({
-      model: google("gemini-flash-latest"),
+      model: geminiModel,
+      maxRetries: aiMaxRetries,
       prompt:
         "Summarize the support ticket conversation below for an agent who needs to get up to speed quickly. " +
         "Cover the customer's issue, what has been done so far, and the current state. Keep it to 2-4 sentences. " +
@@ -264,7 +273,8 @@ ticketsRouter.post("/:id/polish-reply", async (req, res) => {
 
   try {
     const { text } = await generateText({
-      model: google("gemini-flash-latest"),
+      model: geminiModel,
+      maxRetries: aiMaxRetries,
       prompt:
         "You are helping a support agent polish a reply to a customer ticket. " +
         "Rewrite the draft below to be clear, professional, and courteous while preserving its " +

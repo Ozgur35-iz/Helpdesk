@@ -42,6 +42,7 @@ export type TicketMinAggregateOutputType = {
   senderName: string | null
   status: string | null
   category: string | null
+  aiResolutionReply: string | null
   externalMessageId: string | null
   assigneeId: string | null
   createdAt: Date | null
@@ -56,6 +57,7 @@ export type TicketMaxAggregateOutputType = {
   senderName: string | null
   status: string | null
   category: string | null
+  aiResolutionReply: string | null
   externalMessageId: string | null
   assigneeId: string | null
   createdAt: Date | null
@@ -70,6 +72,7 @@ export type TicketCountAggregateOutputType = {
   senderName: number
   status: number
   category: number
+  aiResolutionReply: number
   externalMessageId: number
   assigneeId: number
   createdAt: number
@@ -94,6 +97,7 @@ export type TicketMinAggregateInputType = {
   senderName?: true
   status?: true
   category?: true
+  aiResolutionReply?: true
   externalMessageId?: true
   assigneeId?: true
   createdAt?: true
@@ -108,6 +112,7 @@ export type TicketMaxAggregateInputType = {
   senderName?: true
   status?: true
   category?: true
+  aiResolutionReply?: true
   externalMessageId?: true
   assigneeId?: true
   createdAt?: true
@@ -122,6 +127,7 @@ export type TicketCountAggregateInputType = {
   senderName?: true
   status?: true
   category?: true
+  aiResolutionReply?: true
   externalMessageId?: true
   assigneeId?: true
   createdAt?: true
@@ -223,6 +229,7 @@ export type TicketGroupByOutputType = {
   senderName: string
   status: string
   category: string | null
+  aiResolutionReply: string | null
   externalMessageId: string | null
   assigneeId: string | null
   createdAt: Date
@@ -260,6 +267,7 @@ export type TicketWhereInput = {
   senderName?: Prisma.StringFilter<"Ticket"> | string
   status?: Prisma.StringFilter<"Ticket"> | string
   category?: Prisma.StringNullableFilter<"Ticket"> | string | null
+  aiResolutionReply?: Prisma.StringNullableFilter<"Ticket"> | string | null
   externalMessageId?: Prisma.StringNullableFilter<"Ticket"> | string | null
   assigneeId?: Prisma.StringNullableFilter<"Ticket"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Ticket"> | Date | string
@@ -276,6 +284,7 @@ export type TicketOrderByWithRelationInput = {
   senderName?: Prisma.SortOrder
   status?: Prisma.SortOrder
   category?: Prisma.SortOrderInput | Prisma.SortOrder
+  aiResolutionReply?: Prisma.SortOrderInput | Prisma.SortOrder
   externalMessageId?: Prisma.SortOrderInput | Prisma.SortOrder
   assigneeId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -296,6 +305,7 @@ export type TicketWhereUniqueInput = Prisma.AtLeast<{
   senderName?: Prisma.StringFilter<"Ticket"> | string
   status?: Prisma.StringFilter<"Ticket"> | string
   category?: Prisma.StringNullableFilter<"Ticket"> | string | null
+  aiResolutionReply?: Prisma.StringNullableFilter<"Ticket"> | string | null
   assigneeId?: Prisma.StringNullableFilter<"Ticket"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Ticket"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Ticket"> | Date | string
@@ -311,6 +321,7 @@ export type TicketOrderByWithAggregationInput = {
   senderName?: Prisma.SortOrder
   status?: Prisma.SortOrder
   category?: Prisma.SortOrderInput | Prisma.SortOrder
+  aiResolutionReply?: Prisma.SortOrderInput | Prisma.SortOrder
   externalMessageId?: Prisma.SortOrderInput | Prisma.SortOrder
   assigneeId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -333,6 +344,7 @@ export type TicketScalarWhereWithAggregatesInput = {
   senderName?: Prisma.StringWithAggregatesFilter<"Ticket"> | string
   status?: Prisma.StringWithAggregatesFilter<"Ticket"> | string
   category?: Prisma.StringNullableWithAggregatesFilter<"Ticket"> | string | null
+  aiResolutionReply?: Prisma.StringNullableWithAggregatesFilter<"Ticket"> | string | null
   externalMessageId?: Prisma.StringNullableWithAggregatesFilter<"Ticket"> | string | null
   assigneeId?: Prisma.StringNullableWithAggregatesFilter<"Ticket"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Ticket"> | Date | string
@@ -346,6 +358,7 @@ export type TicketCreateInput = {
   senderName: string
   status?: string
   category?: string | null
+  aiResolutionReply?: string | null
   externalMessageId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -361,6 +374,7 @@ export type TicketUncheckedCreateInput = {
   senderName: string
   status?: string
   category?: string | null
+  aiResolutionReply?: string | null
   externalMessageId?: string | null
   assigneeId?: string | null
   createdAt?: Date | string
@@ -375,6 +389,7 @@ export type TicketUpdateInput = {
   senderName?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiResolutionReply?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -390,6 +405,7 @@ export type TicketUncheckedUpdateInput = {
   senderName?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiResolutionReply?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -405,6 +421,7 @@ export type TicketCreateManyInput = {
   senderName: string
   status?: string
   category?: string | null
+  aiResolutionReply?: string | null
   externalMessageId?: string | null
   assigneeId?: string | null
   createdAt?: Date | string
@@ -418,6 +435,7 @@ export type TicketUpdateManyMutationInput = {
   senderName?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiResolutionReply?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -431,6 +449,7 @@ export type TicketUncheckedUpdateManyInput = {
   senderName?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiResolutionReply?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -455,6 +474,7 @@ export type TicketCountOrderByAggregateInput = {
   senderName?: Prisma.SortOrder
   status?: Prisma.SortOrder
   category?: Prisma.SortOrder
+  aiResolutionReply?: Prisma.SortOrder
   externalMessageId?: Prisma.SortOrder
   assigneeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -473,6 +493,7 @@ export type TicketMaxOrderByAggregateInput = {
   senderName?: Prisma.SortOrder
   status?: Prisma.SortOrder
   category?: Prisma.SortOrder
+  aiResolutionReply?: Prisma.SortOrder
   externalMessageId?: Prisma.SortOrder
   assigneeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -487,6 +508,7 @@ export type TicketMinOrderByAggregateInput = {
   senderName?: Prisma.SortOrder
   status?: Prisma.SortOrder
   category?: Prisma.SortOrder
+  aiResolutionReply?: Prisma.SortOrder
   externalMessageId?: Prisma.SortOrder
   assigneeId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -573,6 +595,7 @@ export type TicketCreateWithoutAssigneeInput = {
   senderName: string
   status?: string
   category?: string | null
+  aiResolutionReply?: string | null
   externalMessageId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -587,6 +610,7 @@ export type TicketUncheckedCreateWithoutAssigneeInput = {
   senderName: string
   status?: string
   category?: string | null
+  aiResolutionReply?: string | null
   externalMessageId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -630,6 +654,7 @@ export type TicketScalarWhereInput = {
   senderName?: Prisma.StringFilter<"Ticket"> | string
   status?: Prisma.StringFilter<"Ticket"> | string
   category?: Prisma.StringNullableFilter<"Ticket"> | string | null
+  aiResolutionReply?: Prisma.StringNullableFilter<"Ticket"> | string | null
   externalMessageId?: Prisma.StringNullableFilter<"Ticket"> | string | null
   assigneeId?: Prisma.StringNullableFilter<"Ticket"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Ticket"> | Date | string
@@ -643,6 +668,7 @@ export type TicketCreateWithoutRepliesInput = {
   senderName: string
   status?: string
   category?: string | null
+  aiResolutionReply?: string | null
   externalMessageId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -657,6 +683,7 @@ export type TicketUncheckedCreateWithoutRepliesInput = {
   senderName: string
   status?: string
   category?: string | null
+  aiResolutionReply?: string | null
   externalMessageId?: string | null
   assigneeId?: string | null
   createdAt?: Date | string
@@ -686,6 +713,7 @@ export type TicketUpdateWithoutRepliesInput = {
   senderName?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiResolutionReply?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -700,6 +728,7 @@ export type TicketUncheckedUpdateWithoutRepliesInput = {
   senderName?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiResolutionReply?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   assigneeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -714,6 +743,7 @@ export type TicketCreateManyAssigneeInput = {
   senderName: string
   status?: string
   category?: string | null
+  aiResolutionReply?: string | null
   externalMessageId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -726,6 +756,7 @@ export type TicketUpdateWithoutAssigneeInput = {
   senderName?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiResolutionReply?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -740,6 +771,7 @@ export type TicketUncheckedUpdateWithoutAssigneeInput = {
   senderName?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiResolutionReply?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -754,6 +786,7 @@ export type TicketUncheckedUpdateManyWithoutAssigneeInput = {
   senderName?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  aiResolutionReply?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   externalMessageId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -798,6 +831,7 @@ export type TicketSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   senderName?: boolean
   status?: boolean
   category?: boolean
+  aiResolutionReply?: boolean
   externalMessageId?: boolean
   assigneeId?: boolean
   createdAt?: boolean
@@ -815,6 +849,7 @@ export type TicketSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   senderName?: boolean
   status?: boolean
   category?: boolean
+  aiResolutionReply?: boolean
   externalMessageId?: boolean
   assigneeId?: boolean
   createdAt?: boolean
@@ -830,6 +865,7 @@ export type TicketSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   senderName?: boolean
   status?: boolean
   category?: boolean
+  aiResolutionReply?: boolean
   externalMessageId?: boolean
   assigneeId?: boolean
   createdAt?: boolean
@@ -845,13 +881,14 @@ export type TicketSelectScalar = {
   senderName?: boolean
   status?: boolean
   category?: boolean
+  aiResolutionReply?: boolean
   externalMessageId?: boolean
   assigneeId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TicketOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "subject" | "body" | "requesterEmail" | "senderName" | "status" | "category" | "externalMessageId" | "assigneeId" | "createdAt" | "updatedAt", ExtArgs["result"]["ticket"]>
+export type TicketOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "subject" | "body" | "requesterEmail" | "senderName" | "status" | "category" | "aiResolutionReply" | "externalMessageId" | "assigneeId" | "createdAt" | "updatedAt", ExtArgs["result"]["ticket"]>
 export type TicketInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   assignee?: boolean | Prisma.Ticket$assigneeArgs<ExtArgs>
   replies?: boolean | Prisma.Ticket$repliesArgs<ExtArgs>
@@ -878,6 +915,7 @@ export type $TicketPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     senderName: string
     status: string
     category: string | null
+    aiResolutionReply: string | null
     externalMessageId: string | null
     assigneeId: string | null
     createdAt: Date
@@ -1314,6 +1352,7 @@ export interface TicketFieldRefs {
   readonly senderName: Prisma.FieldRef<"Ticket", 'String'>
   readonly status: Prisma.FieldRef<"Ticket", 'String'>
   readonly category: Prisma.FieldRef<"Ticket", 'String'>
+  readonly aiResolutionReply: Prisma.FieldRef<"Ticket", 'String'>
   readonly externalMessageId: Prisma.FieldRef<"Ticket", 'String'>
   readonly assigneeId: Prisma.FieldRef<"Ticket", 'String'>
   readonly createdAt: Prisma.FieldRef<"Ticket", 'DateTime'>

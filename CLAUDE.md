@@ -27,9 +27,10 @@ Keep entries short and concrete — this file is read by the user afterward to c
 This is a Bun workspace monorepo with two packages: `client` (Vite/React) and `server` (Express/Bun).
 
 ```bash
-bun run dev             # runs both client and server dev servers concurrently (bun --filter '*' dev)
+bun run dev             # client + server + classification worker, together (concurrently -k)
 bun run dev:client       # client only -> http://localhost:5173
-bun run dev:server       # server only -> http://localhost:3001 (bun --watch)
+bun run dev:server       # HTTP server only -> http://localhost:3001 (bun --watch)
+bun run dev:worker       # pg-boss worker only — classification + auto-resolve queues (plain bun, NO --watch)
 bun run test:e2e         # migrates/seeds the test DB, then runs Playwright against it
 bun run test:e2e:setup   # just the test DB migrate+seed step (idempotent)
 bun run test:e2e:ui      # test:e2e, but with the Playwright UI runner
@@ -75,7 +76,7 @@ The actual implementation diverged:
 - Bun workspace monorepo (`/client`, `/server`), not a single Next.js app.
 - Client: Vite + React 19 + React Router, not Next.js. Plain CSS, no Tailwind/shadcn yet.
 - Server: Express + Prisma + `better-auth`, not Auth.js.
-- Done: login + better-auth, admin seed script, role-based access control, user management (create/edit/delete, `server/src/routes/users.ts`), and ticket workflow (`server/src/routes/tickets.ts`) — list/detail with sorting, filtering/search, pagination, assign, update, reply. Tickets can be created via an inbound-email webhook (`server/src/routes/webhooks.ts`, `POST /inbound-email`, secret-header auth) — there's no polling/IMAP integration, just a webhook endpoint. AI features use `@ai-sdk/google` (Gemini, not the planned Claude API/pgvector): automatic ticket categorization on creation (run as a **pg-boss** background job — `server/src/queue.ts` enqueues from the webhook, worker calls `server/src/lib/classify.ts`, retries 3x), on-demand ticket summarization (`POST /api/tickets/:id/summarize`), and reply polishing (`POST /api/tickets/:id/polish-reply`). Playwright e2e (`e2e/`) covers login, users, and the inbound webhook; Vitest component tests exist for `TicketsPage`, `TicketDetailPage`, `UsersPage`.
+- Done: login + better-auth, admin seed script, role-based access control, user management (create/edit/delete, `server/src/routes/users.ts`), and ticket workflow (`server/src/routes/tickets.ts`) — list/detail with sorting, filtering/search, pagination, assign, update, reply. Tickets can be created via an inbound-email webhook (`server/src/routes/webhooks.ts`, `POST /inbound-email`, secret-header auth) — there's no polling/IMAP integration, just a webhook endpoint. AI features use `@ai-sdk/google` (Gemini, not the planned Claude API/pgvector): automatic ticket categorization on creation and KB-driven auto-resolution on creation (both run as **pg-boss** background jobs — one queue module each under `server/src/queue/`, webhook enqueues, a separate no-watch worker process `server/src/worker.ts` runs `server/src/lib/classify.ts` and `server/src/lib/auto-resolve.ts`; see `server/CLAUDE.md`), on-demand ticket summarization (`POST /api/tickets/:id/summarize`), and reply polishing (`POST /api/tickets/:id/polish-reply`). Auto-resolution grades an incoming ticket against `server/knowledge-base.md`: tickets flow `new → processing → resolved | open`, and `new`/`processing` tickets are hidden from the ticket list. Playwright e2e (`e2e/`) covers login, users, and the inbound webhook; Vitest component tests exist for `TicketsPage`, `TicketDetailPage`, `UsersPage`.
 - Not started: outbound email sending (no Postmark/Mailgun/Resend integration — replies are stored, not emailed).
 
 Don't assume the planning docs reflect current reality — check `package.json` and the actual code before recommending an approach "per the plan."

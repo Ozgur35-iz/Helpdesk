@@ -5,7 +5,8 @@ import { prisma } from "./db";
 import { usersRouter } from "./routes/users";
 import { webhooksRouter } from "./routes/webhooks";
 import { ticketsRouter } from "./routes/tickets";
-import { startQueue } from "./queue";
+import { setupClassificationQueue } from "./queue/classification";
+import { setupAutoResolveQueue } from "./queue/auto-resolve";
 
 const app = express();
 const port = process.env.PORT ?? 3001;
@@ -27,8 +28,11 @@ app.use("/api/users", usersRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/tickets", ticketsRouter);
 
-startQueue().catch((err) => {
-  console.error("failed to start job queue; ticket classification disabled:", err);
+// Producer only — open the pg-boss connection and ensure the queues exist so the
+// webhook can enqueue jobs. The handlers live in a separate process
+// (src/worker.ts) so `bun --watch` reloads here don't kill in-flight jobs.
+Promise.all([setupClassificationQueue(), setupAutoResolveQueue()]).catch((err) => {
+  console.error("failed to start job queue producer; job enqueue will fail:", err);
 });
 
 app.listen(port, () => {

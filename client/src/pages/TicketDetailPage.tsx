@@ -21,6 +21,7 @@ type TicketDetail = {
   senderName: string;
   status: string;
   category: string | null;
+  aiResolutionReply?: string | null;
   assignee: Agent | null;
   createdAt: string;
   updatedAt: string;
@@ -44,6 +45,13 @@ type ReplyFormValues = z.infer<typeof replySchema>;
 
 const statusValues = ["open", "pending", "resolved", "closed"] as const;
 const categoryValues = ["billing", "technical", "account", "refund"] as const;
+
+// AI-pipeline statuses an agent can't set. A ticket only reaches this page in one
+// of these states via a direct URL (they're hidden from the list).
+const pipelineStatusLabels: Record<string, string> = {
+  new: "Awaiting AI triage",
+  processing: "AI processing…",
+};
 
 function titleCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
@@ -251,18 +259,22 @@ export function TicketDetailPage() {
         <dl className="ticket-detail-fields">
           <dt>Status</dt>
           <dd>
-            <select
-              aria-label="Status"
-              value={ticket.status}
-              disabled={statusMutation.isPending}
-              onChange={(e) => statusMutation.mutate(e.target.value)}
-            >
-              {statusValues.map((status) => (
-                <option key={status} value={status}>
-                  {titleCase(status)}
-                </option>
-              ))}
-            </select>
+            {pipelineStatusLabels[ticket.status] ? (
+              <span className="ticket-status-pipeline">{pipelineStatusLabels[ticket.status]}</span>
+            ) : (
+              <select
+                aria-label="Status"
+                value={ticket.status}
+                disabled={statusMutation.isPending}
+                onChange={(e) => statusMutation.mutate(e.target.value)}
+              >
+                {statusValues.map((status) => (
+                  <option key={status} value={status}>
+                    {titleCase(status)}
+                  </option>
+                ))}
+              </select>
+            )}
             {statusError && (
               <p className="auth-error" role="alert">
                 {statusError}
@@ -314,6 +326,14 @@ export function TicketDetailPage() {
         </dl>
       </div>
       <p className="ticket-detail-body">{ticket.body}</p>
+      {ticket.aiResolutionReply && (
+        <div className="ticket-summary ticket-ai-resolution">
+          <h2>
+            <SparklesIcon /> AI resolution reply
+          </h2>
+          <p>{ticket.aiResolutionReply}</p>
+        </div>
+      )}
       <section className="ticket-replies">
         <h2>Replies</h2>
         <ul className="ticket-replies-list">
