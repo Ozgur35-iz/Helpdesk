@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../db";
 import type { Ticket } from "../../generated/prisma/client";
 import { geminiModel, aiMaxRetries } from "./ai";
+import { Sentry } from "./sentry";
 
 // The support knowledge base drives the auto-resolve decision. It's a static
 // asset shipped next to the server package; read it once and cache the promise.
@@ -61,6 +62,7 @@ async function autoResolveTicket(ticket: Ticket) {
     console.log(`auto-resolve: ticket ${ticket.id} handed to an agent — ${object.reason}`);
     await prisma.ticket.update({ where: { id: ticket.id }, data: { status: "open" } });
   } catch (err) {
+    Sentry.captureException(err);
     console.error(`auto-resolve: failed for ticket ${ticket.id}, handing to an agent:`, err);
     await prisma.ticket.update({ where: { id: ticket.id }, data: { status: "open" } });
   }

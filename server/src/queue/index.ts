@@ -1,4 +1,5 @@
 import { PgBoss } from "pg-boss";
+import { Sentry } from "../lib/sentry";
 
 // Shared pg-boss connection. Each feature owns its own queue module next to this
 // one — `./classification` and `./auto-resolve` — which import `boss` /
@@ -16,6 +17,7 @@ if (!connectionString) {
 export const boss = new PgBoss({ connectionString, schema: "pgboss" });
 
 boss.on("error", (err) => {
+  Sentry.captureException(err);
   console.error("pg-boss error:", err);
 });
 

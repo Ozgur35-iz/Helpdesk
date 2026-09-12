@@ -1,5 +1,6 @@
 import { boss, connectQueue } from "./index";
 import { classifyTicketById } from "../lib/classify";
+import { Sentry } from "../lib/sentry";
 
 export const TICKET_CLASSIFICATION_QUEUE = "ticket-classification";
 
@@ -27,7 +28,12 @@ export async function workClassificationQueue(): Promise<void> {
   await boss.work<TicketClassificationJob>(
     TICKET_CLASSIFICATION_QUEUE,
     async ([job]) => {
-      await classifyTicketById(job.data.ticketId);
+      try {
+        await classifyTicketById(job.data.ticketId);
+      } catch (err) {
+        Sentry.captureException(err);
+        throw err;
+      }
     },
   );
 }

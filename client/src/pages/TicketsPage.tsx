@@ -42,7 +42,8 @@ const columns = [
     id: "requester",
     header: "Requester",
     enableSorting: false,
-    cell: ({ row }) => `${row.original.senderName} <${row.original.requesterEmail}>`,
+    cell: ({ row }) =>
+      `${row.original.senderName} <${row.original.requesterEmail}>`,
   }),
   columnHelper.accessor("status", { header: "Status" }),
   columnHelper.accessor("category", {
@@ -68,12 +69,18 @@ export function TicketsPage() {
   const [requesterFilter, setRequesterFilter] = useState("");
 
   useEffect(() => {
-    const timer = setTimeout(() => setSubjectFilter(subjectInput.trim()), FILTER_DEBOUNCE_MS);
+    const timer = setTimeout(
+      () => setSubjectFilter(subjectInput.trim()),
+      FILTER_DEBOUNCE_MS,
+    );
     return () => clearTimeout(timer);
   }, [subjectInput]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setRequesterFilter(requesterInput.trim()), FILTER_DEBOUNCE_MS);
+    const timer = setTimeout(
+      () => setRequesterFilter(requesterInput.trim()),
+      FILTER_DEBOUNCE_MS,
+    );
     return () => clearTimeout(timer);
   }, [requesterInput]);
 
@@ -81,7 +88,14 @@ export function TicketsPage() {
 
   useEffect(() => {
     setPageIndex(0);
-  }, [sort.id, sort.desc, statusFilter, categoryFilter, subjectFilter, requesterFilter]);
+  }, [
+    sort.id,
+    sort.desc,
+    statusFilter,
+    categoryFilter,
+    subjectFilter,
+    requesterFilter,
+  ]);
 
   const {
     data: response,
@@ -200,10 +214,15 @@ export function TicketsPage() {
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className={header.column.getCanSort() ? "sortable" : undefined}
+                  className={
+                    header.column.getCanSort() ? "sortable" : undefined
+                  }
                   onClick={header.column.getToggleSortingHandler()}
                 >
-                  {flexRender(header.column.columnDef.header, header.getContext())}
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext(),
+                  )}
                   {header.column.getIsSorted() === "asc" && " ▲"}
                   {header.column.getIsSorted() === "desc" && " ▼"}
                 </th>
@@ -239,7 +258,12 @@ export function TicketsPage() {
                   onClick={() => navigate(`/tickets/${row.original.id}`)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                    <td key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </td>
                   ))}
                 </tr>
               ))}
@@ -247,13 +271,19 @@ export function TicketsPage() {
       </table>
       {!showSkeleton && (
         <div className="tickets-pagination">
-          <button onClick={() => setPageIndex((p) => p - 1)} disabled={pageIndex === 0}>
+          <button
+            onClick={() => setPageIndex((p) => p - 1)}
+            disabled={pageIndex === 0}
+          >
             Previous
           </button>
           <span>
             Page {pageIndex + 1} of {pageCount} ({total} total)
           </span>
-          <button onClick={() => setPageIndex((p) => p + 1)} disabled={pageIndex + 1 >= pageCount}>
+          <button
+            onClick={() => setPageIndex((p) => p + 1)}
+            disabled={pageIndex + 1 >= pageCount}
+          >
             Next
           </button>
         </div>
