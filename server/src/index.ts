@@ -5,6 +5,7 @@ import { prisma } from "./db";
 import { usersRouter } from "./routes/users";
 import { webhooksRouter } from "./routes/webhooks";
 import { ticketsRouter } from "./routes/tickets";
+import { metricsRouter } from "./routes/metrics";
 import { setupClassificationQueue } from "./queue/classification";
 import { setupAutoResolveQueue } from "./queue/auto-resolve";
 
@@ -27,6 +28,7 @@ app.get("/api/health", async (_req, res) => {
 app.use("/api/users", usersRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/tickets", ticketsRouter);
+app.use("/api/metrics", metricsRouter);
 
 // Producer only — open the pg-boss connection and ensure the queues exist so the
 // webhook can enqueue jobs. The handlers live in a separate process

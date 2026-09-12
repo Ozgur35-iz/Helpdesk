@@ -149,9 +149,20 @@ ticketsRouter.patch("/:id/status", async (req, res) => {
     return;
   }
 
+  // Stamp `resolvedAt` the first time a ticket reaches a terminal state, and
+  // clear it if it's reopened, so the dashboard's average-resolution-time metric
+  // stays accurate. resolved -> closed keeps the original timestamp.
+  const enteringTerminal =
+    (data.status === "resolved" || data.status === "closed") && ticket.resolvedAt == null;
+  const reopening = data.status === "open" || data.status === "pending";
+
   const updated = await prisma.ticket.update({
     where: { id: params.id },
-    data: { status: data.status },
+    data: {
+      status: data.status,
+      ...(enteringTerminal ? { resolvedAt: new Date() } : {}),
+      ...(reopening ? { resolvedAt: null } : {}),
+    },
     include: { assignee: { select: { id: true, name: true, email: true } } },
   });
   res.json(updated);

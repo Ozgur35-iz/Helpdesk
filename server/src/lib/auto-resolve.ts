@@ -53,7 +53,7 @@ async function autoResolveTicket(ticket: Ticket) {
     if (object.canResolve) {
       await prisma.ticket.update({
         where: { id: ticket.id },
-        data: { status: "resolved", aiResolutionReply: object.reply },
+        data: { status: "resolved", aiResolutionReply: object.reply, resolvedAt: new Date() },
       });
       return;
     }

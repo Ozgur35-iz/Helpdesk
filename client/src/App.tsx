@@ -3,7 +3,7 @@ import "./App.css";
 import { GuestOnly, RequireAdmin, RequireAuth } from "./routes/guards";
 import { Layout } from "./components/Layout";
 import { LoginPage } from "./pages/LoginPage";
-import { HomePage } from "./pages/HomePage";
+import { DashboardPage } from "./pages/DashboardPage";
 import { UsersPage } from "./pages/UsersPage";
 import { TicketsPage } from "./pages/TicketsPage";
 import { TicketDetailPage } from "./pages/TicketDetailPage";
@@ -16,7 +16,7 @@ function App() {
       </Route>
       <Route element={<RequireAuth />}>
         <Route element={<Layout />}>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<DashboardPage />} />
           <Route path="/tickets" element={<TicketsPage />} />
           <Route path="/tickets/:id" element={<TicketDetailPage />} />
           <Route element={<RequireAdmin />}>
