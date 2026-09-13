@@ -80,8 +80,12 @@ it("renders the fetched tickets once loading finishes and the minimum skeleton t
   expect(screen.getByText("Bob Smith <bob@example.com>")).toBeInTheDocument();
   expect(screen.getByText("—")).toBeInTheDocument();
   expect(screen.getByRole("cell", { name: "billing" })).toBeInTheDocument();
+  const createdDate = new Date(tickets[0].createdAt);
+  expect(screen.getByText(createdDate.toLocaleDateString())).toBeInTheDocument();
   expect(
-    screen.getByText(new Date(tickets[0].createdAt).toLocaleString()),
+    screen.getByText(
+      createdDate.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }),
+    ),
   ).toBeInTheDocument();
 
   expect(screen.getByText("Billing question")).toBeInTheDocument();

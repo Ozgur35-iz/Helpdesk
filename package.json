@@ -8,6 +8,9 @@
     "dev:server": "bun --filter server dev",
     "dev:client": "bun --filter client dev",
     "dev:worker": "bun --filter server worker",
+    "build": "bun --filter client build",
+    "start": "bun --filter server db:migrate:deploy && bun --filter server start",
+    "start:worker": "bun --filter server worker",
     "test:e2e:setup": "cd server && bun run db:test:setup",
     "test:e2e": "bun run test:e2e:setup && playwright test",
     "test:e2e:ui": "bun run test:e2e:setup && playwright test --ui"

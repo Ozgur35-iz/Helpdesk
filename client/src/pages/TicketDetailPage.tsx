@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Field } from "@ark-ui/react/field";
+import { SparklesIcon } from "../components/icons";
 
 type Agent = {
   id: string;
@@ -55,21 +56,6 @@ const pipelineStatusLabels: Record<string, string> = {
 
 function titleCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function SparklesIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="16"
-      height="16"
-      fill="currentColor"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path d="M11 2l1.6 4.9L17.5 8.5l-4.9 1.6L11 15l-1.6-4.9L4.5 8.5l4.9-1.6L11 2zM18.5 13l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9.9-2.6z" />
-    </svg>
-  );
 }
 
 export function TicketDetailPage() {
@@ -224,7 +210,7 @@ export function TicketDetailPage() {
         <h1>{ticket.subject}</h1>
         <button
           type="button"
-          className="summarize-button"
+          className="summarize-button btn-ai"
           onClick={() => summarizeMutation.mutate()}
           disabled={summarizeMutation.isPending}
         >
@@ -362,7 +348,12 @@ export function TicketDetailPage() {
               {replyError}
             </p>
           )}
-          <button type="button" onClick={onPolishReply} disabled={polishMutation.isPending}>
+          <button
+            type="button"
+            className="btn-ai"
+            onClick={onPolishReply}
+            disabled={polishMutation.isPending}
+          >
             {polishMutation.isPending ? "Polishing..." : "Polish"}
           </button>
           <button type="submit" disabled={isSubmittingReply}>

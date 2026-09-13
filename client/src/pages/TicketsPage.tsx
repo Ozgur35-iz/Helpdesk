@@ -37,6 +37,10 @@ const CATEGORY_OPTIONS = ["billing", "technical", "account", "refund"];
 const columnHelper = createColumnHelper<Ticket>();
 
 const columns = [
+  columnHelper.accessor("id", {
+    header: "ID",
+    cell: (info) => <span className="mono">#{info.getValue()}</span>,
+  }),
   columnHelper.accessor("subject", { header: "Subject" }),
   columnHelper.display({
     id: "requester",
@@ -45,14 +49,27 @@ const columns = [
     cell: ({ row }) =>
       `${row.original.senderName} <${row.original.requesterEmail}>`,
   }),
-  columnHelper.accessor("status", { header: "Status" }),
+  columnHelper.accessor("status", {
+    header: "Status",
+    cell: (info) => <span className={`tag tag-${info.getValue()}`}>{info.getValue()}</span>,
+  }),
   columnHelper.accessor("category", {
     header: "Category",
     cell: (info) => info.getValue() ?? "—",
   }),
   columnHelper.accessor("createdAt", {
     header: "Created",
-    cell: (info) => new Date(info.getValue()).toLocaleString(),
+    cell: (info) => {
+      const date = new Date(info.getValue());
+      return (
+        <span className="mono cell-datetime">
+          <span className="cell-date">{date.toLocaleDateString()}</span>
+          <span className="cell-time">
+            {date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </span>
+      );
+    },
   }),
 ];
 
@@ -234,6 +251,9 @@ export function TicketsPage() {
           {showSkeleton
             ? Array.from({ length: 5 }, (_, i) => (
                 <tr key={i}>
+                  <td>
+                    <span className="skeleton skeleton-short" />
+                  </td>
                   <td>
                     <span className="skeleton" />
                   </td>

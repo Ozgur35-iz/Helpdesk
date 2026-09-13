@@ -50,6 +50,7 @@ export function DeleteUserModal({ user, onClose }: DeleteUserModalProps) {
             </button>
             <button
               type="button"
+              className="btn-danger"
               onClick={() => {
                 setServerError(null);
                 mutation.mutate();
