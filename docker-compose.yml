@@ -1,0 +1,30 @@
+services:
+  server:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - server/.env
+    environment:
+      # Your real Postgres runs on the host machine (localhost:5432), not in
+      # a container. host.docker.internal resolves to the host from inside
+      # the container (Docker Desktop on Windows/Mac; extra_hosts below adds
+      # the same resolution on Linux).
+      DATABASE_URL: postgresql://postgres@host.docker.internal:5432/helpdesk?schema=public
+      BETTER_AUTH_URL: http://localhost:3010
+      CLIENT_ORIGIN: http://localhost:3010
+      PORT: 3001
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "3010:3001"
+
+  worker:
+    build: .
+    command: ["bun", "run", "start:worker"]
+    restart: unless-stopped
+    env_file:
+      - server/.env
+    environment:
+      DATABASE_URL: postgresql://postgres@host.docker.internal:5432/helpdesk?schema=public
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
