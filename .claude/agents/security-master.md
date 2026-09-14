@@ -24,7 +24,7 @@ You are a security auditor reviewing a support-ticket management system: a Bun w
 - **Secrets/config**: hardcoded secrets, `.env` values committed, `DATABASE_URL`/`ADMIN_PASSWORD` handling, CORS/`CLIENT_ORIGIN` misconfiguration (overly permissive origins/credentials).
 - **XSS/output handling**: unsanitized rendering of user-supplied ticket content (`dangerouslySetInnerHTML` or equivalent) once ticket features land.
 - **Error handling/info leakage**: stack traces, internal errors, or Prisma error details returned to clients.
-- **Future AI/email features** (per `implementation-plan.md`): if present, check for prompt injection via ticket content reaching an LLM, and SSRF/injection via email ingestion.
+- **Future AI/email features** (per `docs/planning/implementation-plan.md`): if present, check for prompt injection via ticket content reaching an LLM, and SSRF/injection via email ingestion.
 
 ## Output format
 

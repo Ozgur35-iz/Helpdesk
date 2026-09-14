@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A support-ticket management system (see `project-scope.md` for the full problem/feature spec): agents currently triage support emails by hand; the goal is a system that auto-classifies, summarizes, and suggests replies for tickets using AI, with an admin/agent role split. Auth, user management, and ticket CRUD/workflow are implemented; AI features and outbound email are not — see "Stack reality vs. planning docs" below.
+A support-ticket management system (see `docs/planning/project-scope.md` for the full problem/feature spec): agents currently triage support emails by hand; the goal is a system that auto-classifies, summarizes, and suggests replies for tickets using AI, with an admin/agent role split. Auth, user management, and ticket CRUD/workflow are implemented; AI features and outbound email are not — see "Stack reality vs. planning docs" below.
 
 ## Fix log
 
@@ -70,7 +70,7 @@ Client- and server-specific conventions (route protection, forms, data fetching,
 
 ## Stack reality vs. planning docs
 
-`project-scope.md`, `tech-stack.md`, and `implementation-plan.md` in this repo root were written during early planning and describe an *intended* stack: Next.js (App Router), Auth.js/NextAuth, shadcn/ui + Tailwind + TanStack Table/Query, Postmark/Mailgun, Claude API + pgvector.
+`docs/planning/project-scope.md`, `tech-stack.md`, and `implementation-plan.md` were written during early planning and describe an *intended* stack: Next.js (App Router), Auth.js/NextAuth, shadcn/ui + Tailwind + TanStack Table/Query, Postmark/Mailgun, Claude API + pgvector.
 
 The actual implementation diverged:
 - Bun workspace monorepo (`/client`, `/server`), not a single Next.js app.
