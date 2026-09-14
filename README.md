@@ -6,6 +6,12 @@ An AI-assisted support-ticket system that takes the manual triage out of a suppo
 
 Support agents were triaging incoming emails by hand — reading each one, guessing at category/priority, and writing replies from scratch even when the answer already existed in a knowledge base. This project automates the repetitive part of that loop (classification, first-pass resolution) while keeping a human in charge of anything the AI isn't confident about, with an admin/agent role split and a metrics dashboard to track how well the automation is doing.
 
+## Live demo
+
+https://ticket-management-project-production.up.railway.app
+
+Demo login: `demouser@example.com` / `demouserpass`
+
 ## Features
 
 - **Auth & role-based access** — email/password auth (`better-auth`), admin vs. agent roles, protected routes on both client and server
@@ -103,3 +109,7 @@ e2e/       Playwright specs (login, users, inbound-email webhook, metrics)
 ## Deployment
 
 Both a `Dockerfile`/`docker-compose.yml` and Railway service configs (`railway.json` for the web service, `railway.worker.json` for the worker) are included, so the app can be deployed either as a container or via Railway's Nixpacks build.
+
+## Built with Claude Code
+
+This project was also a deliberate exercise in agentic, AI-assisted development — built end-to-end with Claude Code to learn how to direct an AI coding agent effectively: scoping tasks, reviewing its output, and making the architecture calls myself.
