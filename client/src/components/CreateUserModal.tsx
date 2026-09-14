@@ -10,7 +10,7 @@ import { Field } from "@ark-ui/react/field";
 const createUserSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.email("Enter a valid email"),
-  password: z.string().min(5, "Password must be at least 5 characters"),
+  password: z.string().min(12, "Password must be at least 12 characters"),
 });
 
 type CreateUserFormValues = z.infer<typeof createUserSchema>;

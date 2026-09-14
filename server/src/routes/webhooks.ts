@@ -1,23 +1,35 @@
+import { timingSafeEqual } from "node:crypto";
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../db";
 import { parseBody } from "../lib/validate";
+import { webhookRouteLimiter } from "../lib/rateLimit";
 import { enqueueClassification } from "../queue/classification";
 import { enqueueAutoResolve } from "../queue/auto-resolve";
 
 const inboundEmailSchema = z.object({
-  from: z.email("Enter a valid email"),
-  senderName: z.string().min(1, "Sender name is required"),
-  subject: z.string().min(1, "Subject is required"),
-  body: z.string().min(1, "Body is required"),
-  messageId: z.string().optional(),
+  from: z.email("Enter a valid email").max(320),
+  senderName: z.string().min(1, "Sender name is required").max(200),
+  subject: z.string().min(1, "Subject is required").max(500),
+  body: z.string().min(1, "Body is required").max(20_000),
+  messageId: z.string().max(500).optional(),
 });
 
 export const webhooksRouter = Router();
 
-webhooksRouter.post("/inbound-email", async (req, res) => {
-  const secret = req.header("x-webhook-secret");
-  if (!secret || secret !== process.env.INBOUND_EMAIL_SECRET) {
+function isValidWebhookSecret(provided: string | undefined): boolean {
+  const expected = process.env.INBOUND_EMAIL_SECRET;
+  if (!provided || !expected) return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  // timingSafeEqual throws on mismatched lengths, so guard that first — this
+  // still reveals length via timing, but never the secret's content.
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
+webhooksRouter.post("/inbound-email", webhookRouteLimiter, async (req, res) => {
+  if (!isValidWebhookSecret(req.header("x-webhook-secret"))) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }

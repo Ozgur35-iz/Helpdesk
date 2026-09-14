@@ -19,7 +19,7 @@ function uniqueUser() {
   return {
     name: `E2E Test User ${id}`,
     email: `e2e-user-${id}@example.com`,
-    password: "hunter2pass",
+    password: "hunter2pass99",
   };
 }
 

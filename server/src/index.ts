@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import express from "express";
+import helmet from "helmet";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth";
 import { prisma } from "./db";
@@ -27,6 +28,13 @@ const app = express();
 // correct req.ip (rate limiting) to work.
 app.set("trust proxy", 1);
 const port = process.env.PORT ?? 3001;
+
+// CSP is left off: this server also serves the built Vite SPA as static
+// files (see clientDist below), and a default CSP is likely to break it
+// (hashed asset URLs, Sentry beacon, etc.) without deliberate tuning.
+// The rest of helmet's defaults (HSTS, X-Content-Type-Options, X-Frame-Options,
+// hiding X-Powered-By, ...) are cheap wins with nothing to tune.
+app.use(helmet({ contentSecurityPolicy: false }));
 
 app.all("/api/auth/*splat", toNodeHandler(auth));
 
@@ -59,6 +67,22 @@ if (fs.existsSync(path.join(clientDist, "index.html"))) {
 }
 
 Sentry.setupExpressErrorHandler(app);
+
+// Terminal handler: Sentry's handler above re-throws, and Express 5's own
+// default handler would otherwise reply with a stack trace whenever
+// NODE_ENV isn't exactly "production" — never leak that regardless of env.
+app.use(
+  (
+    err: unknown,
+    _req: express.Request,
+    res: express.Response,
+    _next: express.NextFunction,
+  ) => {
+    console.error("unhandled request error:", err);
+    if (res.headersSent) return;
+    res.status(500).json({ error: "Internal server error" });
+  },
+);
 
 // Producer only — open the pg-boss connection and ensure the queues exist so the
 // webhook can enqueue jobs. The handlers live in a separate process

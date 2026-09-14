@@ -6,6 +6,7 @@ import { Prisma } from "../../generated/prisma/client";
 import { auth } from "../auth";
 import { prisma } from "../db";
 import { geminiModel, aiMaxRetries } from "../lib/ai";
+import { aiRouteLimiter, mutationRouteLimiter } from "../lib/rateLimit";
 import { parseBody } from "../lib/validate";
 import { categoryValues } from "../lib/categories";
 
@@ -28,12 +29,20 @@ const ticketsQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(10),
 });
 
-const ticketIdParamSchema = z.object({ id: z.coerce.number().int().positive() });
+// Ticket.id is a Postgres int4 — cap the accepted value so an out-of-range id
+// (e.g. 9999999999999) fails validation here instead of crashing Prisma.
+const ticketIdParamSchema = z.object({
+  id: z.coerce.number().int().positive().max(2_147_483_647),
+});
 const assignTicketSchema = z.object({ assigneeId: z.string().min(1).nullable() });
 const updateStatusSchema = z.object({ status: z.enum(agentStatusValues) });
 const updateCategorySchema = z.object({ category: z.enum(categoryValues).nullable() });
-const createReplySchema = z.object({ body: z.string().trim().min(1, "Reply cannot be empty") });
-const polishReplySchema = z.object({ body: z.string().trim().min(1, "Reply cannot be empty") });
+const createReplySchema = z.object({
+  body: z.string().trim().min(1, "Reply cannot be empty").max(5_000, "Reply is too long"),
+});
+const polishReplySchema = z.object({
+  body: z.string().trim().min(1, "Reply cannot be empty").max(5_000, "Reply is too long"),
+});
 
 export const ticketsRouter = Router();
 
@@ -64,7 +73,7 @@ ticketsRouter.get("/", async (req, res) => {
   const [tickets, total] = await Promise.all([
     prisma.ticket.findMany({
       where,
-      include: { assignee: { select: { id: true, name: true, email: true } } },
+      include: { assignee: { select: { id: true, name: true } } },
       orderBy: { [query.sortBy]: query.sortOrder },
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
@@ -86,7 +95,7 @@ ticketsRouter.get("/:id", async (req, res) => {
 
   const ticket = await prisma.ticket.findUnique({
     where: { id: params.id },
-    include: { assignee: { select: { id: true, name: true, email: true } } },
+    include: { assignee: { select: { id: true, name: true } } },
   });
   if (!ticket) {
     res.status(404).json({ error: "Ticket not found" });
@@ -95,7 +104,7 @@ ticketsRouter.get("/:id", async (req, res) => {
   res.json(ticket);
 });
 
-ticketsRouter.patch("/:id/assign", async (req, res) => {
+ticketsRouter.patch("/:id/assign", mutationRouteLimiter, async (req, res) => {
   const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
   if (!session) {
     res.status(401).json({ error: "Unauthorized" });
@@ -125,12 +134,12 @@ ticketsRouter.patch("/:id/assign", async (req, res) => {
   const updated = await prisma.ticket.update({
     where: { id: params.id },
     data: { assigneeId: data.assigneeId },
-    include: { assignee: { select: { id: true, name: true, email: true } } },
+    include: { assignee: { select: { id: true, name: true } } },
   });
   res.json(updated);
 });
 
-ticketsRouter.patch("/:id/status", async (req, res) => {
+ticketsRouter.patch("/:id/status", mutationRouteLimiter, async (req, res) => {
   const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
   if (!session) {
     res.status(401).json({ error: "Unauthorized" });
@@ -163,12 +172,12 @@ ticketsRouter.patch("/:id/status", async (req, res) => {
       ...(enteringTerminal ? { resolvedAt: new Date() } : {}),
       ...(reopening ? { resolvedAt: null } : {}),
     },
-    include: { assignee: { select: { id: true, name: true, email: true } } },
+    include: { assignee: { select: { id: true, name: true } } },
   });
   res.json(updated);
 });
 
-ticketsRouter.patch("/:id/category", async (req, res) => {
+ticketsRouter.patch("/:id/category", mutationRouteLimiter, async (req, res) => {
   const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
   if (!session) {
     res.status(401).json({ error: "Unauthorized" });
@@ -190,7 +199,7 @@ ticketsRouter.patch("/:id/category", async (req, res) => {
   const updated = await prisma.ticket.update({
     where: { id: params.id },
     data: { category: data.category },
-    include: { assignee: { select: { id: true, name: true, email: true } } },
+    include: { assignee: { select: { id: true, name: true } } },
   });
   res.json(updated);
 });
@@ -211,15 +220,18 @@ ticketsRouter.get("/:id/replies", async (req, res) => {
     return;
   }
 
+  // Cap the response so a thread padded with the per-reply length limit
+  // (createReplySchema) can't still grow the payload without bound.
   const replies = await prisma.ticketReply.findMany({
     where: { ticketId: params.id },
-    include: { author: { select: { id: true, name: true, email: true } } },
+    include: { author: { select: { id: true, name: true } } },
     orderBy: { createdAt: "asc" },
+    take: 500,
   });
   res.json(replies);
 });
 
-ticketsRouter.post("/:id/summarize", async (req, res) => {
+ticketsRouter.post("/:id/summarize", aiRouteLimiter, async (req, res) => {
   const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
   if (!session) {
     res.status(401).json({ error: "Unauthorized" });
@@ -235,16 +247,22 @@ ticketsRouter.post("/:id/summarize", async (req, res) => {
     return;
   }
 
-  const replies = await prisma.ticketReply.findMany({
+  // take the most recent 30 replies (desc), then restore chronological order —
+  // bounds the prompt regardless of how long a thread has grown.
+  const recentReplies = await prisma.ticketReply.findMany({
     where: { ticketId: params.id },
     include: { author: { select: { name: true } } },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
+    take: 30,
   });
+  const replies = recentReplies.reverse();
 
   const conversation = [
     `Original message from ${ticket.senderName}:\n${ticket.body}`,
     ...replies.map((reply) => `Reply from ${reply.author.name}:\n${reply.body}`),
-  ].join("\n\n");
+  ]
+    .join("\n\n")
+    .slice(0, 20_000);
 
   try {
     const { text } = await generateText({
@@ -263,7 +281,7 @@ ticketsRouter.post("/:id/summarize", async (req, res) => {
   }
 });
 
-ticketsRouter.post("/:id/polish-reply", async (req, res) => {
+ticketsRouter.post("/:id/polish-reply", aiRouteLimiter, async (req, res) => {
   const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
   if (!session) {
     res.status(401).json({ error: "Unauthorized" });
@@ -302,7 +320,7 @@ ticketsRouter.post("/:id/polish-reply", async (req, res) => {
   }
 });
 
-ticketsRouter.post("/:id/replies", async (req, res) => {
+ticketsRouter.post("/:id/replies", mutationRouteLimiter, async (req, res) => {
   const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
   if (!session) {
     res.status(401).json({ error: "Unauthorized" });
@@ -323,7 +341,7 @@ ticketsRouter.post("/:id/replies", async (req, res) => {
 
   const reply = await prisma.ticketReply.create({
     data: { body: data.body, ticketId: params.id, authorId: session.user.id },
-    include: { author: { select: { id: true, name: true, email: true } } },
+    include: { author: { select: { id: true, name: true } } },
   });
   res.status(201).json(reply);
 });

@@ -45,7 +45,7 @@ it("shows validation errors and does not submit when fields are invalid", async 
   await editor.click(screen.getByRole("button", { name: "Save" }));
 
   expect(await screen.findByText("Enter a valid email")).toBeInTheDocument();
-  expect(screen.getByText("Password must be at least 5 characters")).toBeInTheDocument();
+  expect(screen.getByText("Password must be at least 12 characters")).toBeInTheDocument();
   expect(mockedPatch).not.toHaveBeenCalled();
 });
 
@@ -73,13 +73,13 @@ it("submits a new password when provided", async () => {
   const editor = userEvent.setup();
   renderModal();
 
-  await editor.type(screen.getByLabelText("Password"), "newpass123");
+  await editor.type(screen.getByLabelText("Password"), "newpass123456");
   await editor.click(screen.getByRole("button", { name: "Save" }));
 
   expect(mockedPatch).toHaveBeenCalledWith("/api/users/1", {
     name: "Ada Lovelace",
     email: "ada@example.com",
-    password: "newpass123",
+    password: "newpass123456",
   });
 });
 

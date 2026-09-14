@@ -11,7 +11,6 @@ import { SparklesIcon } from "../components/icons";
 type Agent = {
   id: string;
   name: string;
-  email: string;
 };
 
 type TicketDetail = {
@@ -31,7 +30,6 @@ type TicketDetail = {
 type ReplyAuthor = {
   id: string;
   name: string;
-  email: string;
 };
 
 type TicketReply = {
@@ -317,6 +315,9 @@ export function TicketDetailPage() {
           <h2>
             <SparklesIcon /> AI resolution reply
           </h2>
+          <p className="ticket-ai-resolution-caveat">
+            AI-drafted from the knowledge base — verify before relying on it.
+          </p>
           <p>{ticket.aiResolutionReply}</p>
         </div>
       )}

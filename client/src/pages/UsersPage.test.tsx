@@ -154,14 +154,14 @@ it("creates a user via the modal and refreshes the list", async () => {
 
   await user.type(await screen.findByLabelText("Name"), newUser.name);
   await user.type(screen.getByLabelText("Email"), newUser.email);
-  await user.type(screen.getByLabelText("Password"), "hunter2");
+  await user.type(screen.getByLabelText("Password"), "hunter2secret");
   await user.click(screen.getByRole("button", { name: "Create" }));
 
   expect(await screen.findByText("Grace Hopper")).toBeInTheDocument();
   expect(mockedPost).toHaveBeenCalledWith("/api/users", {
     name: newUser.name,
     email: newUser.email,
-    password: "hunter2",
+    password: "hunter2secret",
   });
   expect(screen.queryByRole("heading", { name: "Create User" })).not.toBeInTheDocument();
 });

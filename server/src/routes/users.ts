@@ -9,13 +9,13 @@ import { parseBody } from "../lib/validate";
 const createUserSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.email("Enter a valid email"),
-  password: z.string().min(5, "Password must be at least 5 characters"),
+  password: z.string().min(12, "Password must be at least 12 characters"),
 });
 
 const updateUserSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.email("Enter a valid email"),
-  password: z.union([z.literal(""), z.string().min(5, "Password must be at least 5 characters")]).optional(),
+  password: z.union([z.literal(""), z.string().min(12, "Password must be at least 12 characters")]).optional(),
 });
 
 export const usersRouter = Router();
@@ -29,7 +29,7 @@ usersRouter.get("/agents", async (req, res) => {
 
   const agents = await prisma.user.findMany({
     where: { role: "agent", deletedAt: null },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
   res.json(agents);

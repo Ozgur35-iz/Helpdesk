@@ -33,13 +33,33 @@ export const auth = betterAuth({
   },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      // These endpoints have no UI in this app (client only ever calls
+      // useSession/signIn.email/signOut) and better-auth mounts them
+      // regardless of config, so block them outright rather than leave an
+      // unused account-takeover surface (e.g. change-password against the
+      // published demo login).
+      if (
+        ctx.path === "/change-password" ||
+        ctx.path === "/update-user" ||
+        ctx.path === "/change-email" ||
+        ctx.path === "/delete-user" ||
+        ctx.path === "/set-password"
+      ) {
+        throw new APIError("FORBIDDEN", { message: "Not available" });
+      }
+
       if (ctx.path !== "/sign-in/email") return;
       const email = ctx.body?.email;
       if (!email) return;
 
       const user = await prisma.user.findUnique({ where: { email } });
       if (user?.deletedAt) {
-        throw new APIError("FORBIDDEN", { message: "This account has been deactivated" });
+        // Same message/status better-auth itself uses for a wrong password, so a
+        // deactivated account can't be distinguished from a wrong password or a
+        // nonexistent email (avoids account-existence enumeration).
+        throw new APIError("UNAUTHORIZED", {
+          message: "Invalid email or password",
+        });
       }
     }),
   },

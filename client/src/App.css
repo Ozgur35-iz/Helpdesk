@@ -421,6 +421,13 @@
   color: var(--color-status-resolved);
 }
 
+.ticket-ai-resolution-caveat {
+  margin: 0 0 0.5rem !important;
+  font-size: 0.8rem;
+  color: var(--color-ink-muted);
+  font-style: italic;
+}
+
 .ticket-status-pipeline {
   font-style: italic;
   color: var(--color-ink-muted);

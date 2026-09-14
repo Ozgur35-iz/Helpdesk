@@ -49,7 +49,7 @@ it("shows validation errors and does not submit when fields are invalid", async 
 
   expect(await screen.findByText("Name is required")).toBeInTheDocument();
   expect(screen.getByText("Enter a valid email")).toBeInTheDocument();
-  expect(screen.getByText("Password must be at least 5 characters")).toBeInTheDocument();
+  expect(screen.getByText("Password must be at least 12 characters")).toBeInTheDocument();
   expect(mockedPost).not.toHaveBeenCalled();
 });
 
@@ -62,13 +62,13 @@ it("submits the form and closes the modal on success", async () => {
 
   await user.type(screen.getByLabelText("Name"), "Ada Lovelace");
   await user.type(screen.getByLabelText("Email"), "ada@example.com");
-  await user.type(screen.getByLabelText("Password"), "hunter2");
+  await user.type(screen.getByLabelText("Password"), "hunter2secret");
   await user.click(screen.getByRole("button", { name: "Create" }));
 
   expect(mockedPost).toHaveBeenCalledWith("/api/users", {
     name: "Ada Lovelace",
     email: "ada@example.com",
-    password: "hunter2",
+    password: "hunter2secret",
   });
   await vi.waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
 });
@@ -83,7 +83,7 @@ it("shows the server error and keeps the modal open when the email is already ta
 
   await user.type(screen.getByLabelText("Name"), "Ada Lovelace");
   await user.type(screen.getByLabelText("Email"), "ada@example.com");
-  await user.type(screen.getByLabelText("Password"), "hunter2");
+  await user.type(screen.getByLabelText("Password"), "hunter2secret");
   await user.click(screen.getByRole("button", { name: "Create" }));
 
   expect(await screen.findByText("A user with this email already exists")).toBeInTheDocument();
